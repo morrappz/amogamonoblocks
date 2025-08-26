@@ -28,10 +28,10 @@ jobs:
       - name: Log - Node.js installed
         run: node -v
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable corepack (for pnpm)
+        run: corepack enable
 
-      - name: Log - pnpm installed
+      - name: Log - pnpm version
         run: pnpm -v
 
       - name: Create .env file
@@ -46,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "📦 Installing dependencies with pnpm..."
-          pnpm install
+          pnpm install --frozen-lockfile
 
       - name: Log - Dependencies installed
         run: echo "✅ Dependencies installed successfully"
