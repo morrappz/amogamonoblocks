@@ -1,0 +1,14 @@
+{
+  "HomePage": {
+    "title": "bonjour!"
+  },
+  "LocaleSwitcher": {
+    "en": "English",
+    "de": "German",
+    "fr": "French",
+    "me": "Melayu",
+    "te": "Telugu",
+    "hi": "Hindi",
+    "label": "Language"
+  }
+}

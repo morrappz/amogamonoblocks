@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Woo Analytic Assistant Order",
+    "type": "api",
+    "queries": [
+      {
+        "id": 1,
+        "api": "",
+        "name": "Total Orders",
+        "type": "card",
+        "field": "",
+        "description": "Total Number of orders"
+      },
+      {
+        "id": 2,
+        "api": "",
+        "name": "Top 10 Products from API",
+        "type": "chart",
+        "story": "",
+        "chartType": "pie-chart",
+        "description": "Top 10 Products"
+      },
+      {
+        "id": 3,
+        "api": "",
+        "name": "Total Revenue",
+        "type": "card",
+        "field": "",
+        "description": "Total orders revenue "
+      },
+      {
+        "id": 4,
+        "api": "",
+        "name": "Total Gross Sales",
+        "type": "card",
+        "field": "",
+        "description": "Total Gross sales "
+      },
+      {
+        "id": 5,
+        "api": "",
+        "name": "Total Refunds",
+        "type": "card",
+        "field": "",
+        "description": "Total Refunds"
+      },
+      {
+        "id": 6,
+        "api": "",
+        "name": "Total number of times coupons were used",
+        "type": "card",
+        "field": "",
+        "description": "Total number of times coupons were used in orders"
+      },
+      {
+        "id": 7,
+        "api": "",
+        "name": "Total Sales",
+        "type": "card",
+        "field": "",
+        "description": "Total Sales"
+      },
+      {
+        "id": 8,
+        "api": "",
+        "name": "Average order value",
+        "type": "card",
+        "field": "",
+        "description": "Average order value"
+      }
+    ],
+    "description": "Chat with Woo Analytic Assistant Order"
+  }
+]
