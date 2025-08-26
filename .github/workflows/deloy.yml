@@ -1,0 +1,73 @@
+name: Deploy Web & Native
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # allow manual runs
+
+jobs:
+  # --- Web Deployment to Vercel ---
+  web:
+    name: Deploy Web to Vercel
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: pnpm
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Deploy to Vercel
+        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  # --- Native Build with EAS ---
+  native:
+    name: Build Native APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/native
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: pnpm
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Setup Expo EAS CLI
+        run: pnpm add -g eas-cli
+
+      - name: Authenticate with Expo
+        run: eas whoami || eas login --token ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK
+        run: eas build --platform android --profile preview --non-interactive --output=./app.apk
+
+      - name: Upload APK to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: apps/native/app.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
