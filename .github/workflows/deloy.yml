@@ -34,6 +34,14 @@ jobs:
       - name: Log - pnpm installed
         run: pnpm -v
 
+      - name: Create .env file
+        run: |
+          echo "🌍 Creating .env file..."
+          touch .env
+          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" >> .env
+          echo "NEXT_PUBLIC_OTHER_KEY=${{ secrets.NEXT_PUBLIC_OTHER_KEY }}" >> .env
+          echo "✅ .env file created"
+
       - name: Install dependencies
         run: |
           echo "📦 Installing dependencies with pnpm..."
