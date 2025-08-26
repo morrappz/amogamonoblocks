@@ -28,10 +28,10 @@ jobs:
       - name: Log - Node.js installed
         run: node -v
 
-      - name: Enable corepack (for pnpm)
-        run: corepack enable
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - name: Log - pnpm version
+      - name: Log - pnpm installed
         run: pnpm -v
 
       - name: Create .env file
@@ -40,13 +40,13 @@ jobs:
           touch .env
           echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> .env
           echo "NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}" >> .env
-          echo "AUTH_TRUST_HOST=${{ secrets.AUTH_TRUST_HOST }}" >> .env
+          echo "NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}" >> .env
           echo "✅ .env file created"
 
       - name: Install dependencies
         run: |
           echo "📦 Installing dependencies with pnpm..."
-          pnpm install --frozen-lockfile
+          pnpm install
 
       - name: Log - Dependencies installed
         run: echo "✅ Dependencies installed successfully"
