@@ -9,15 +9,16 @@ import type {
 import { postgrest } from "@/lib/postgrest";
 import { getErrorMessage } from "@/lib/handle-error";
 import { UploadAttachment } from "@/lib/minio";
-import { auth } from "@/auth";
+
 import { Message } from "../type";
+import { getSupabaseSession } from "@/lib/supabase-server";
 
 export async function createRecord(
   input: CreateContactSchema & { file?: File }
 ) {
   unstable_noStore();
   try {
-    const session = await auth();
+    const session = await getSupabaseSession();
 
     if (input.file) {
       const result = await UploadAttachment({

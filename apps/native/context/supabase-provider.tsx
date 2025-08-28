@@ -12,15 +12,18 @@ import { Session, User, WeakPassword } from "@supabase/supabase-js";
 
 import { supabase } from "@/config/supabase";
 import { Platform } from "react-native";
-import { expoFetchWithAuth, extractParamsFromQuery, extractParamsFromUrl, generateAPIUrl } from "@/lib/utils";
+import {
+	expoFetchWithAuth,
+	extractParamsFromQuery,
+	extractParamsFromUrl,
+	generateAPIUrl,
+} from "@/lib/utils";
 import type { Dispatch, SetStateAction } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { database } from "@/database";
 import { useDatabase } from "@nozbe/watermelondb/react";
 
-
 SplashScreen.preventAutoHideAsync();
-
 
 interface AuthState {
 	initialized: boolean;
@@ -34,11 +37,28 @@ interface AuthState {
 		page_icon_url?: string;
 	}[];
 	allowedPaths: string[];
-	storeSettings: { store: Record<string, string>; woocommerce: { url: string; consumerKey: string; consumerSecret: string; pluginAuthKey: string }; ai: { provider: string; apiKey: string; model?: string } } | null;
+	storeSettings: {
+		store: Record<string, string>;
+		woocommerce: {
+			url: string;
+			consumerKey: string;
+			consumerSecret: string;
+			pluginAuthKey: string;
+		};
+		ai: { provider: string; apiKey: string; model?: string };
+	} | null;
 	isFetchingUserInfo: boolean;
 	refreshUserDataAndSettings: () => Promise<void>;
-	signUp: (email: string, password: string) => Promise<boolean | { user: User | null; session: Session | null; }>;
-	signIn: (email: string, password: string) => Promise<boolean | { user: User; session: Session; weakPassword?: WeakPassword }>;
+	signUp: (
+		email: string,
+		password: string,
+	) => Promise<boolean | { user: User | null; session: Session | null }>;
+	signIn: (
+		email: string,
+		password: string,
+	) => Promise<
+		boolean | { user: User; session: Session; weakPassword?: WeakPassword }
+	>;
 	signOut: () => Promise<void>;
 	getGoogleOAuthUrl: (redirectTo: string) => Promise<string | null>;
 	setOAuthSession: (tokens: {
@@ -57,13 +77,13 @@ export const AuthContext = createContext<AuthState>({
 	allowedPaths: [],
 	storeSettings: null,
 	isFetchingUserInfo: false,
-	refreshUserDataAndSettings: async () => { },
+	refreshUserDataAndSettings: async () => {},
 	signUp: async () => false,
 	signIn: async () => false,
-	signOut: async () => { },
+	signOut: async () => {},
 	getGoogleOAuthUrl: async () => "",
-	setOAuthSession: async () => { },
-	setSession: () => { }
+	setOAuthSession: async () => {},
+	setSession: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -71,21 +91,25 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }: PropsWithChildren) {
 	const [initialized, setInitialized] = useState(false);
 	const [session, setSession] = useState<Session | null>(null);
-	const [tempLoginSession, SetTempLoginSession] = useState<Session | null>(null);
+	const [tempLoginSession, SetTempLoginSession] = useState<Session | null>(
+		null,
+	);
 	const [userCatalog, setUserCatalog] = useState<any | null>(null);
 	const [allowedPaths, setAllowedPaths] = useState<string[]>([]);
-	const [allowedPages, setAllowedPages] = useState<{
-		page_name: string;
-		page_link: string;
-		page_icon_name?: string;
-		page_icon_url?: string;
-	}[]>([]);
+	const [allowedPages, setAllowedPages] = useState<
+		{
+			page_name: string;
+			page_link: string;
+			page_icon_name?: string;
+			page_icon_url?: string;
+		}[]
+	>([]);
 	const [isFetchingUserInfo, setIsFetchingUserInfo] = useState(false);
 	const [storeSettings, setSettings] = useState<any | null>(null);
 
 	const router = useRouter();
 	const pathname = usePathname();
-	const publicRoutes = ["/supplier"]
+	const publicRoutes = ["/supplier"];
 
 	const fetchUserCatalogAndPermissions = async (userId: string) => {
 		setIsFetchingUserInfo(true);
@@ -96,7 +120,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 					.select("*")
 					.eq("user_id", userId)
 					.maybeSingle(),
-				supabase.rpc("get_allowed_paths", { user_uuid: userId })
+				supabase.rpc("get_allowed_paths", { user_uuid: userId }),
 			]);
 
 			const { data: userRows, error: userError } = userRes;
@@ -113,7 +137,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 					setAllowedPaths([]);
 				} else {
 					setAllowedPages(paths);
-					setAllowedPaths(paths.map((row: { page_link: string; }) => row.page_link))
+					setAllowedPaths(
+						paths.map((row: { page_link: string }) => row.page_link),
+					);
 				}
 			}
 		} finally {
@@ -123,7 +149,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
 	const loadStoreSettings = async () => {
 		try {
-			const res = await expoFetchWithAuth(session)(generateAPIUrl('/api/store-settings'));
+			const res = await expoFetchWithAuth(session)(
+				generateAPIUrl("/api/store-settings"),
+			);
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error || "Failed to load settings.");
 			setSettings(data);
@@ -139,7 +167,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 			return;
 		}
 
-		console.log("Manual refresh triggered: Fetching user data and store settings...");
+		console.log(
+			"Manual refresh triggered: Fetching user data and store settings...",
+		);
 		// Run both fetch operations in parallel for better performance
 		await Promise.all([
 			fetchUserCatalogAndPermissions(session.user.id),
@@ -148,7 +178,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
 		console.log("Refresh complete.");
 	}, [session, fetchUserCatalogAndPermissions, loadStoreSettings]);
 
-	const signUp = async (email: string, password: string): Promise<boolean | { user: User | null; session: Session | null; }> => {
+	const signUp = async (
+		email: string,
+		password: string,
+	): Promise<boolean | { user: User | null; session: Session | null }> => {
 		const { data, error } = await supabase.auth.signUp({
 			email,
 			password,
@@ -161,16 +194,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
 		if (data.session) {
 			// setSession(data.session);
-			SetTempLoginSession(data.session)
+			SetTempLoginSession(data.session);
 			console.log("User signed up:", data.user);
-			return data
+			return data;
 		} else {
 			console.log("No user returned from sign up");
 		}
 		return false;
 	};
 
-	const signIn = async (email: string, password: string): Promise<boolean | { user: User; session: Session; weakPassword?: WeakPassword }> => {
+	const signIn = async (
+		email: string,
+		password: string,
+	): Promise<
+		boolean | { user: User; session: Session; weakPassword?: WeakPassword }
+	> => {
 		await handleLogout(); // Ensure we clear any previous session before signing in
 		const { data, error } = await supabase.auth.signInWithPassword({
 			email,
@@ -199,12 +237,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
 			console.error("Error signing out:", error);
 			return;
 		} else {
-			await handleLogout()
+			await handleLogout();
 			console.log("User signed out");
 		}
 	};
 
-	const getGoogleOAuthUrl = async (redirectTo: string): Promise<string | null> => {
+	const getGoogleOAuthUrl = async (
+		redirectTo: string,
+	): Promise<string | null> => {
 		const result = await supabase.auth.signInWithOAuth({
 			provider: "google",
 			options: {
@@ -236,7 +276,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 		// Wipe WatermelonDB
 
 		await database.write(async () => {
-			await database.unsafeResetDatabase()
+			await database.unsafeResetDatabase();
 		});
 		console.log("Database reset");
 	};
@@ -256,7 +296,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 	// Fetch user catalog and permissions when session changes
 	useEffect(() => {
 		if (session && session.user) {
-			refreshUserDataAndSettings()
+			refreshUserDataAndSettings();
 		} else {
 			setUserCatalog(null);
 			setAllowedPages([]);
@@ -268,9 +308,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
 		if (initialized) {
 			SplashScreen.hideAsync();
 
-
 			// On web, check for tokens in the URL on the /authenticating page
-			if (Platform.OS === "web" && typeof window !== "undefined" && window.location.pathname === "/authenticating") {
+			if (
+				Platform.OS === "web" &&
+				typeof window !== "undefined" &&
+				window.location.pathname === "/authenticating"
+			) {
 				let data = extractParamsFromUrl(window.location.href);
 				if (!data.access_token || !data.refresh_token) {
 					data = extractParamsFromQuery(window.location.href);
@@ -286,11 +329,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 				}
 			}
 
-			const isPublic = publicRoutes.some((path) =>
-				pathname.startsWith(path)
-			);
+			const isPublic = publicRoutes.some((path) => pathname.startsWith(path));
 
-			if (isPublic) return
+			if (isPublic) return;
 			if (session) {
 				router.replace("/");
 			} else {
@@ -317,7 +358,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 				allowedPaths,
 				isFetchingUserInfo,
 				storeSettings,
-				refreshUserDataAndSettings
+				refreshUserDataAndSettings,
 			}}
 		>
 			{children}

@@ -1,8 +1,8 @@
 "use server";
 
-import { auth } from "@/auth";
 import { n8n } from "@/lib/n8n";
 import { postgrest } from "@/lib/postgrest";
+import { getSupabaseSessionMain } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 
 // Renamed: Represents configuration for a SINGLE platform
@@ -66,7 +66,7 @@ export async function getConnectionSettings(business_number?: string): Promise<{
   error?: string;
 } | null> {
   try {
-    const sessions = await auth();
+    const sessions = await getSupabaseSessionMain();
     const businessNumber = sessions?.user?.business_number || business_number;
 
     if (!businessNumber) {

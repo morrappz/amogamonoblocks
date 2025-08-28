@@ -2,9 +2,10 @@
 
 import { z } from "zod";
 
-import { signIn } from "@/auth";
+// import { signIn } from "@/auth";
 import { postgrest } from "@/lib/postgrest";
 import { saveUserLogs } from "@/utils/userLogs";
+import { toast } from "sonner";
 
 const authFormSchema = z.object({
   email: z.string().email(),
@@ -50,7 +51,7 @@ export const login = async (
       signInOptions.redirectTo = validatedData.callbackUrl;
     }
 
-    await signIn("credentials", signInOptions);
+    // await signIn("credentials", signInOptions);
 
     await saveUserLogs({
       status: "Login Success",
@@ -126,11 +127,11 @@ export const register = async (
         return { status: "failed" };
       }
 
-      await signIn("credentials", {
-        email: validatedData.user_email,
-        password: validatedData.password,
-        redirect: false,
-      });
+      // await signIn("credentials", {
+      //   email: validatedData.user_email,
+      //   password: validatedData.password,
+      //   redirect: false,
+      // });
 
       return { status: "success" };
     }

@@ -5,13 +5,11 @@ import { ThemeProvider } from "next-themes";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
-import { SessionProvider } from "next-auth/react";
 import { SearchProvider } from "@/context/search-context";
 import { cn } from "@/lib/utils";
-import { NotificationManager } from "@/components/notification-manager";
-import { ExpoNotificationManagerWrapper } from "@/components/ExpoNotificationManagerWrapper";
 import { DialogModel } from "@/components/modal/global-model";
 import NextTopLoader from "nextjs-toploader";
+import { AuthProvider } from "@/context/supabase-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,35 +41,33 @@ export default async function RootLayout({
       <body
         className={cn(geistSans.variable, geistMono.variable, "antialiased")}
       >
-        <NextIntlClientProvider messages={messages}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-            themes={[
-              "light",
-              "dark",
-              "zinc",
-              "blue",
-              "green",
-              "violet",
-              "neo",
-              "bubble",
-            ]}
-          >
-            <SearchProvider>
-              <SessionProvider>
+        <AuthProvider>
+          <NextIntlClientProvider messages={messages}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+              themes={[
+                "light",
+                "dark",
+                "zinc",
+                "blue",
+                "green",
+                "violet",
+                "neo",
+                "bubble",
+              ]}
+            >
+              <SearchProvider>
                 <NextTopLoader />
-                <NotificationManager />
-                <ExpoNotificationManagerWrapper />
                 {children}
-              </SessionProvider>
-            </SearchProvider>
-          </ThemeProvider>
-        </NextIntlClientProvider>
-        <Toaster richColors />
-        <DialogModel />
+              </SearchProvider>
+            </ThemeProvider>
+          </NextIntlClientProvider>
+          <Toaster richColors />
+          <DialogModel />
+        </AuthProvider>
       </body>
     </html>
   );

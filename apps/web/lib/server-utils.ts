@@ -2,7 +2,8 @@
 
 import { User } from "next-auth";
 import { postgrest } from "./postgrest";
-import { auth } from "@/auth";
+
+import { getSupabaseSessionMain } from "./supabase-server";
 
 export async function getAllowedPaths(user: User) {
   try {
@@ -25,7 +26,6 @@ export async function getAllowedPaths(user: User) {
 }
 
 export async function saveFcmToken(user_catalog_id: number, token: string) {
-  console.log("saveFcmToken, user_id", user_catalog_id)
   const { data, error } = await postgrest
     .asAdmin()
     .from("user_catalog")
@@ -42,7 +42,7 @@ export async function saveFcmToken(user_catalog_id: number, token: string) {
 }
 
 export async function getUserServerSession() {
-  const session = await auth();
+  const session = await getSupabaseSessionMain();
   if (!session) return { session: null, status: "unauthenticated" };
   return { session, status: "authenticated" };
 }

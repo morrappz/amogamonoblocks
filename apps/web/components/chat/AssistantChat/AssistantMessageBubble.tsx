@@ -16,7 +16,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChartRenderer } from "../ChartRenderer";
 
-import { useSession } from "next-auth/react";
 import ShareMenu from "../MenuItems/ShareMenu";
 import RenderTable from "../RenderTable";
 import AnalyticCardFileApi from "../AnalyticCardFileApi/AnalyticCardFileApi";
@@ -25,6 +24,7 @@ import AnalyticCard from "./AnalyticCard";
 import { AssistantData, ChartData, Query } from "../types/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/supabase-provider";
 
 type Message = {
   id: string;
@@ -62,7 +62,7 @@ export const AssistantMessageBubble = React.memo(function ChatMessageBubble(
   props: Props
 ) {
   const { message, onUpdateMessage, parsedMessage } = props;
-  const { data: session } = useSession();
+  const { session } = useAuth();
   const [displayMenu, setDisplayMenu] = useState(false);
 
   const assistantResponse = Array.isArray(parsedMessage) ? (
@@ -190,7 +190,7 @@ export const AssistantMessageBubble = React.memo(function ChatMessageBubble(
     >
       <div className="mb-1 w-10 h-10 rounded-full flex items-center justify-center  text-muted-foreground">
         {message.role === "user"
-          ? session?.user?.user_name?.[0]?.toUpperCase()
+          ? session?.user?.email?.[0]?.toUpperCase()
           : props.aiEmoji}
       </div>
 
@@ -208,14 +208,14 @@ export const AssistantMessageBubble = React.memo(function ChatMessageBubble(
             (message.initialMsg === true || displayMenu)
               ? renderAssistantButtons()
               : message.role === "assistant" &&
-                message.analysisPrompt &&
-                message.suggestions === true
-              ? suggestedPromptsRender(message)
-              : message.role === "assistant" && message.analysisPrompt
-              ? fallbackResponse(message)
-              : message.role === "assistant"
-              ? assistantResponse
-              : message.content}
+                  message.analysisPrompt &&
+                  message.suggestions === true
+                ? suggestedPromptsRender(message)
+                : message.role === "assistant" && message.analysisPrompt
+                  ? fallbackResponse(message)
+                  : message.role === "assistant"
+                    ? assistantResponse
+                    : message.content}
           </div>
 
           {message.role === "assistant" && (

@@ -21,6 +21,7 @@ import { Github, Facebook, Loader2 } from "lucide-react";
 import { login, LoginActionState } from "../actions";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { useAuth } from "@/context/supabase-provider";
 
 const formSchema = z.object({
   email: z
@@ -38,8 +39,9 @@ const formSchema = z.object({
 });
 
 export default function SignIn() {
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { signIn } = useAuth();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
 
@@ -58,29 +60,53 @@ export default function SignIn() {
     },
   });
 
-  useEffect(() => {
-    if (pending || !state?.status) return;
-    if (state?.status === "failed") {
-      toast.error("Invalid credentials!");
-    } else if (state?.status === "invalid_data") {
-      toast.error("Failed validating your submission!");
-    } else if (state?.status === "success") {
-      // Check if there's a callback URL to redirect to
-      if (callbackUrl) {
-        try {
-          // Validate that the callback URL is safe (same origin or relative)
-          const url = new URL(callbackUrl);
-          if (url.origin === window.location.origin) {
-            window.location.href = callbackUrl;
-            return;
-          }
-        } catch {
-          // If URL parsing fails, fall back to refresh
-        }
+  // useEffect(() => {
+  //   if (pending || !state?.status) return;
+  //   if (state?.status === "failed") {
+  //     toast.error("Invalid credentials!");
+  //   } else if (state?.status === "invalid_data") {
+  //     toast.error("Failed validating your submission!");
+  //   } else if (state?.status === "success") {
+  //     // Check if there's a callback URL to redirect to
+  //     if (callbackUrl) {
+  //       try {
+  //         // Validate that the callback URL is safe (same origin or relative)
+  //         const url = new URL(callbackUrl);
+  //         if (url.origin === window.location.origin) {
+  //           window.location.href = callbackUrl;
+  //           return;
+  //         }
+  //       } catch {
+  //         // If URL parsing fails, fall back to refresh
+  //       }
+  //     }
+  //     router.refresh();
+  //   }
+  // }, [state, pending, router, callbackUrl]);
+
+  const handleLogin = async (data: z.infer<typeof formSchema>) => {
+    console.log("data-----", data);
+    setIsLoading(true);
+    try {
+      const result = await signIn(data.email, data.password);
+      console.log("result-----", result);
+      if (
+        result &&
+        typeof result === "object" &&
+        "user" in result &&
+        result.user
+      ) {
+        console.log("loged in");
+      } else {
+        toast.error("Invalid credentials");
       }
-      router.refresh();
+    } catch (error) {
+      console.error("Error signing in:", error);
+      toast.error("Error signing in. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [state, pending, router, callbackUrl]);
+  };
 
   return (
     <Card className="p-6">
@@ -93,13 +119,7 @@ export default function SignIn() {
       </div>
       <div className="grid gap-6">
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((v) =>
-              startTransition(() =>
-                formAction({ ...v, callbackUrl: callbackUrl || undefined })
-              )
-            )}
-          >
+          <form onSubmit={form.handleSubmit(handleLogin)}>
             <div className="grid gap-2">
               <FormField
                 control={form.control}
@@ -146,7 +166,7 @@ export default function SignIn() {
               />
               <Button className="mt-2" disabled={isLoading || pending}>
                 Login
-                {pending && <Loader2 className="animate-spin" />}
+                {isLoading && <Loader2 className="animate-spin" />}
               </Button>
               <p className="text-sm text-muted-foreground">
                 You want create new account?{" "}

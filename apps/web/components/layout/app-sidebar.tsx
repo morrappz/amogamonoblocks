@@ -13,13 +13,14 @@ import { NavGroup } from "@/components/layout/nav-group";
 import { NavUser } from "@/components/layout/nav-user";
 import { sidebarData } from "./sidebar-data";
 import { LayoutDashboard } from "lucide-react";
-import { Session } from "next-auth";
+import { Session } from "@supabase/supabase-js";
 
 export function AppSidebar({
   session,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { session: Session | null }) {
   const { state } = useSidebar();
+  console.log("session=======", session);
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
@@ -33,11 +34,9 @@ export function AppSidebar({
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-semibold">
-                {session?.user?.business_name}
+                {session?.user?.user_metadata?.email}
               </span>
-              <span className="truncate text-xs">
-                {session?.user?.app_name}
-              </span>
+              <span className="truncate text-xs">{session?.user?.email}</span>
             </div>
           </SidebarMenuButton>
           {state !== "collapsed" && (

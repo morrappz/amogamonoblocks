@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { postgrest } from "@/lib/postgrest";
-import { auth } from "@/auth";
+
+import { getSupabaseSession } from "@/lib/supabase-server";
 
 export async function GET() {
   try {
-    const session = await auth();
+    const session = await getSupabaseSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

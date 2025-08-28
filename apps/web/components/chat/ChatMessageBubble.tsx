@@ -21,11 +21,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChartRenderer } from "./ChartRenderer";
 import AnalyticCard from "./AnalyticCard";
-import { useSession } from "next-auth/react";
 import ShareMenu from "./MenuItems/ShareMenu";
 import RenderTable from "./RenderTable";
 import AnalyticCardFileApi from "./AnalyticCardFileApi/AnalyticCardFileApi";
 import ShareFileMenu from "./AnalyticCardFileApi/ShareMenu";
+import { useAuth } from "@/context/supabase-provider";
 
 type Message = {
   id: string;
@@ -69,7 +69,7 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble(
     table,
     messages,
   } = props;
-  const { data: session } = useSession();
+  const { session } = useAuth();
 
   // State to track the icon status from the corresponding user prompt
   const [iconStatus, setIconStatus] = useState({
@@ -185,7 +185,7 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble(
     >
       <div className="mb-1 w-10 h-10 rounded-full flex items-center justify-center  text-muted-foreground">
         {message.role === "user"
-          ? session?.user?.user_name?.[0]?.toUpperCase()
+          ? session?.user?.email?.[0]?.toUpperCase()
           : props.aiEmoji}
       </div>
 

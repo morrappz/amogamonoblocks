@@ -54,7 +54,7 @@ import {
   getChatImportant,
   getChatByShareId,
 } from "@/app/(authenticated)/langchain-chat/lib/actions";
-import { useSession } from "next-auth/react";
+
 import { v4 as uuidv4 } from "uuid";
 import {
   DropdownMenu,
@@ -82,6 +82,7 @@ import ChatName from "./ChatName";
 import Important from "./MenuItems/Important";
 import ChatBookMarks from "./MenuItems/ChatBookMarks";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/context/supabase-provider";
 
 type Message = {
   id: string;
@@ -294,7 +295,7 @@ export function ChatWindow(props: {
   //   saveLogs();
   // }, []);
 
-  const { data: session } = useSession();
+  const { session } = useAuth();
 
   const chat = useChat({
     api: props.endpoint,

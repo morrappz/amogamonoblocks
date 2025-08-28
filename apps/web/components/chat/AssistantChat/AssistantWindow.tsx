@@ -46,7 +46,7 @@ import {
   getChatFavorites,
   fetchFormSetupData, // Add this function to your actions
 } from "@/app/(authenticated)/langchain-chat/lib/actions";
-import { useSession } from "next-auth/react";
+
 import { v4 as uuidv4 } from "uuid";
 import {
   DropdownMenu,
@@ -71,6 +71,7 @@ import Assistants from "../MenuItems/Assistants";
 import { AssistantData, ChartData, Content, Query } from "../types/types";
 import { AssistantMessages } from "./AssistantMessages";
 import { AssistantLayout } from "./AssistantLayout";
+import { useAuth } from "@/context/supabase-provider";
 
 // type Message = {
 //   id: string;
@@ -262,7 +263,7 @@ export function AssistantWindow(props: {
     saveLogs();
   }, []);
 
-  const { data: session } = useSession();
+  const { session } = useAuth();
 
   // Function to update message status
   const handleUpdateMessage = async (

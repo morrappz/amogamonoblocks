@@ -3,12 +3,16 @@
 import { postgrest } from "@/lib/postgrest";
 import IpAddress from "./IPAddress";
 import getCurrentBrowser from "./getCurrentBrowser";
-import { auth } from "@/auth";
+import {
+  getSupabaseSession,
+  getSupabaseSessionMain,
+} from "@/lib/supabase-server";
+
 // import getUserOS from "./getCurrentOS";
 // import getUserLocation from "./geoLocation";
 
 export async function saveUserLogs(payload) {
-  const session = await auth();
+  const session = await getSupabaseSessionMain();
   const payloadData = {
     ...payload,
     user_ip_address: await IpAddress(),

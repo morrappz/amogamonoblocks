@@ -1,11 +1,11 @@
 "use server";
 
-import { auth } from "@/auth";
 import { postgrest } from "@/lib/postgrest";
+import { getSupabaseSessionMain } from "@/lib/supabase-server";
 import { v4 as uuidv4 } from "uuid";
 
 export async function getChatHistory(chatGroup: string) {
-  const session = await auth();
+  const session = await getSupabaseSessionMain();
   const userId = session?.user?.user_catalog_id;
   try {
     const { data, error } = await postgrest

@@ -3,16 +3,18 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/layout/header";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { auth } from "@/auth";
+
 import { NavUser } from "@/components/layout/nav-user";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { useAuth } from "@/context/supabase-provider";
+import { getSupabaseSession } from "@/lib/supabase-server";
 
 export default async function AuthenticatedLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
+  const session = await getSupabaseSession();
 
   return (
     <div className="size-full">

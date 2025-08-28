@@ -1,6 +1,6 @@
 import { PostgrestClient } from "@supabase/postgrest-js";
 import { Database } from "@/types/database";
-import { auth } from "@/auth";
+
 // @ts-expect-error Could not find a declaration file for module '@supabase/node-fetch'
 import { Headers as NodeFetchHeaders } from "@supabase/node-fetch";
 

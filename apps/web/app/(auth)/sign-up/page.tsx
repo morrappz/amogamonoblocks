@@ -21,6 +21,7 @@ import { Github, Facebook } from "lucide-react";
 import { register, RegisterActionState } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useAuth } from "@/context/supabase-provider";
 
 const formSchema = z
   .object({
@@ -65,15 +66,16 @@ const formSchema = z
   });
 
 export default function SignUp() {
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { signUp } = useAuth();
 
-  const [state, formAction, pending] = useActionState<
-    RegisterActionState,
-    z.infer<typeof formSchema>
-  >(register, {
-    status: "idle",
-  });
+  // const [state, formAction, pending] = useActionState<
+  //   RegisterActionState,
+  //   z.infer<typeof formSchema>
+  // >(onSubmit, {
+  //   status: "idle",
+  // });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -90,21 +92,29 @@ export default function SignUp() {
     },
   });
 
-  useEffect(() => {
-    if (pending || !state?.status) return;
+  const handleSignUp = async (data: z.infer<typeof formSchema>) => {
+    try {
+      setIsLoading(true);
+      const result = await signUp(data.user_email, data.password);
 
-    if (state?.status === "user_exists") {
-      toast.error("Account already exists");
-    } else if (state?.status === "failed") {
-      if (state?.message) toast.error(state?.message);
-      else toast.error("Failed to create account");
-    } else if (state?.status === "invalid_data") {
-      toast.error("Failed validating your submission!");
-    } else if (state?.status === "success") {
-      toast.success("Account created successfully");
-      router.refresh();
+      if (
+        result &&
+        typeof result === "object" &&
+        "user" in result &&
+        result.user
+      ) {
+        console.log("loged in");
+      } else {
+        toast.error("Invalid credentials");
+      }
+      // form.reset();
+    } catch (error) {
+      console.error("Error creating user:", error);
+      toast.error("Failed to create account");
+    } finally {
+      setIsLoading(false);
     }
-  }, [state, pending, router]);
+  };
 
   return (
     <Card className="p-6">
@@ -125,11 +135,7 @@ export default function SignUp() {
       </div>
       <div className="grid gap-6">
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit((v) =>
-              startTransition(() => formAction(v))
-            )}
-          >
+          <form onSubmit={form.handleSubmit(handleSignUp)}>
             <div className="grid gap-2">
               <FormField
                 control={form.control}

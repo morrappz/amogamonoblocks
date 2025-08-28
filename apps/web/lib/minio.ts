@@ -1,6 +1,6 @@
 "use server";
-import { auth } from "@/auth";
 import * as Minio from "minio";
+import { getSupabaseSessionMain } from "./supabase-server";
 
 const minioClient = new Minio.Client({
   endPoint: process.env.MINIO_S3_URL ?? "",
@@ -29,7 +29,7 @@ export const UploadAttachment = async ({
   fileName,
   folderName = "",
 }: UploadParams): Promise<UploadResponse> => {
-  const session = await auth();
+  const session = await getSupabaseSessionMain();
   const saveDir =
     session?.user?.business_number ||
     session?.user?.for_business_number ||

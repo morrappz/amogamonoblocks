@@ -1,11 +1,12 @@
 "use client";
-import { signOut } from "next-auth/react"
+import { useAuth } from "@/context/supabase-provider";
 import { LogOut } from "lucide-react";
 
 export function SignOutButton() {
+  const { signOut } = useAuth();
   return (
     <div
-      onClick={() => signOut()}
+      onClick={async () => await signOut()}
       className="relative flex items-center gap-2 text-sm outline-none transition-colors [&>svg]:size-4 [&>svg]:shrink-0"
     >
       <LogOut />

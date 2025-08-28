@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
+import { getSupabaseSession } from "@/lib/supabase-server";
 
 export default async function Settings() {
-  const session = await auth();
+  const session = await getSupabaseSession();
 
   return (
     <>

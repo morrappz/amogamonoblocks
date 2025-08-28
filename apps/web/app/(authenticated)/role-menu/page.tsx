@@ -1,8 +1,12 @@
 import { Main } from "@/components/layout/main";
 import { postgrest } from "@/lib/postgrest";
 import ClientRoleMenu from "./client";
-import { auth } from "@/auth";
+
 import { Metadata } from "next";
+import {
+  getSupabaseSession,
+  getSupabaseSessionMain,
+} from "@/lib/supabase-server";
 
 export const metadata: Metadata = {
   title: "Role Menu",
@@ -10,7 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default async function RoleMenu() {
-  const session = await auth();
+  const session = await getSupabaseSessionMain();
+  console.log("session------", session);
   if (!session) return <div>Not authenticated</div>;
   const { data: pages_list } = await postgrest.from("page_list").select("*");
 
