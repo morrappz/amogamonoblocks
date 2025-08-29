@@ -42,7 +42,15 @@ interface AuthState {
   refreshUserDataAndSettings: () => Promise<void>;
   signUp: (
     email: string,
-    password: string
+    password: string,
+    additionalData?: {
+      first_name?: string;
+      last_name?: string;
+      user_name?: string;
+      user_mobile?: string;
+      for_business_name?: string;
+      for_business_number?: string;
+    }
   ) => Promise<boolean | { user: User | null; session: Session | null }>;
   signIn: (
     email: string,
@@ -144,6 +152,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return;
     }
 
+    console.log("session============id==========", session.user.id);
+
     // Run both fetch operations in parallel for better performance
     await Promise.all([fetchUserCatalogAndPermissions(session.user.id)]);
     console.log("Refresh complete.");
@@ -151,27 +161,87 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signUp = async (
     email: string,
-    password: string
+    password: string,
+    additionalData?: {
+      first_name?: string;
+      last_name?: string;
+      user_name?: string;
+      user_mobile?: string;
+      for_business_name?: string;
+      for_business_number?: string;
+    }
   ): Promise<boolean | { user: User | null; session: Session | null }> => {
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      // Log the sign-up attempt
+      console.log("Attempting sign-up for:", email);
+      console.log("Additional data:", additionalData);
 
-    if (error) {
-      console.error("Error signing up:", error);
+      // First try basic signup without metadata to isolate the issue
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        // Temporarily comment out metadata to test basic signup
+        /*
+        options: additionalData
+          ? {
+              data: {
+                first_name: additionalData.first_name,
+                last_name: additionalData.last_name,
+                user_name: additionalData.user_name,
+                user_mobile: additionalData.user_mobile,
+                for_business_name: additionalData.for_business_name,
+                for_business_number: additionalData.for_business_number,
+              },
+            }
+          : undefined,
+        */
+      });
+
+      if (error) {
+        console.error("Error signing up:", error);
+        console.error("Error details:", error.message, error.status);
+        return false;
+      }
+
+      if (data.session) {
+        // setSession(data.session);
+        SetTempLoginSession(data.session);
+        console.log("User signed up successfully:", data.user);
+
+        // If basic signup works, try to manually update user_catalog
+        if (additionalData) {
+          try {
+            await supabaseClient.from("user_catalog").upsert({
+              user_id: data.user?.id,
+              user_email: email,
+              first_name: additionalData.first_name,
+              last_name: additionalData.last_name,
+              user_name: additionalData.user_name,
+              user_mobile: additionalData.user_mobile,
+              for_business_name: additionalData.for_business_name,
+              for_business_number: additionalData.for_business_number,
+              business_name: additionalData.for_business_name,
+              business_number: additionalData.for_business_number,
+              created_datetime: new Date().toISOString(),
+            });
+            console.log("User catalog updated manually");
+          } catch (catalogError) {
+            console.error(
+              "Error updating user catalog manually:",
+              catalogError
+            );
+          }
+        }
+
+        return data;
+      } else {
+        console.log("No session returned from sign up, but no error");
+        return false;
+      }
+    } catch (exception) {
+      console.error("Exception during sign-up:", exception);
       return false;
     }
-
-    if (data.session) {
-      // setSession(data.session);
-      SetTempLoginSession(data.session);
-      console.log("User signed up:", data.user);
-      return data;
-    } else {
-      console.log("No user returned from sign up");
-    }
-    return false;
   };
 
   const signIn = async (

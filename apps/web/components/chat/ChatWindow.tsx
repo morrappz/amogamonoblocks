@@ -295,7 +295,7 @@ export function ChatWindow(props: {
   //   saveLogs();
   // }, []);
 
-  const { session } = useAuth();
+  const { session, userCatalog } = useAuth();
 
   const chat = useChat({
     api: props.endpoint,
@@ -368,7 +368,7 @@ export function ChatWindow(props: {
             content: message.content, // Save original content
             chat_group: "LangStarter",
             status: "active",
-            user_id: session?.user?.user_catalog_id || "",
+            user_id: userCatalog?.user_catalog_id || "",
             createdAt: new Date().toISOString(),
             isLike: false,
             bookmark: false,
@@ -505,7 +505,7 @@ export function ChatWindow(props: {
       setMessagesLoaded(false); // Reset loading state
 
       // Allow loading if we have an ID and either user is logged in OR it's a shared chat
-      if (id && (session?.user?.user_catalog_id || isSharedChat)) {
+      if (id && (userCatalog?.user_catalog_id || isSharedChat)) {
         try {
           const existingMessages = await getMessagesByChatId(id);
           if (existingMessages && existingMessages.length > 0) {
@@ -542,7 +542,7 @@ export function ChatWindow(props: {
       // Set initial load to false after first load
       setTimeout(() => setIsInitialLoad(false), 100);
     },
-    [session?.user?.user_catalog_id]
+    [userCatalog?.user_catalog_id]
   );
 
   // Effect for loading shared chat
@@ -607,7 +607,7 @@ export function ChatWindow(props: {
         title: "New Chat", // Use "New Chat" instead of user message
         chat_group: "LangStarter",
         status: "active",
-        user_id: session?.user?.user_catalog_id,
+        user_id: userCatalog?.user_catalog_id,
         createdAt: new Date().toISOString(),
         share_token: shareToken,
         share_url: shareUrl,
@@ -657,7 +657,7 @@ export function ChatWindow(props: {
           content: msg.content,
           chat_group: "LangStarter",
           status: "active",
-          user_id: session?.user?.user_catalog_id || "",
+          user_id: userCatalog?.user_catalog_id || "",
           createdAt: new Date().toISOString(),
           isLike: false,
           bookmark: false,
@@ -710,7 +710,7 @@ export function ChatWindow(props: {
         content: content,
         chat_group: "LangStarter",
         status: "active",
-        user_id: session?.user?.user_catalog_id,
+        user_id: userCatalog?.user_catalog_id,
         createdAt: new Date().toISOString(),
         isLike: false,
         bookmark: false,
@@ -900,7 +900,7 @@ export function ChatWindow(props: {
           content: finalAssistantMessage.content,
           chat_group: "LangStarter",
           status: "active",
-          user_id: session?.user?.user_catalog_id,
+          user_id: userCatalog?.user_catalog_id,
           createdAt: new Date().toISOString(),
           isLike: false,
           bookmark: false,
@@ -974,7 +974,7 @@ export function ChatWindow(props: {
             content: msg.content,
             chat_group: "LangStarter",
             status: "active",
-            user_id: session?.user?.user_catalog_id,
+            user_id: userCatalog?.user_catalog_id,
             createdAt: new Date().toISOString(),
             isLike: msg.isLike || false,
             bookmark: msg.bookmark || false,

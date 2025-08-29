@@ -45,7 +45,9 @@ export function CommandMenu() {
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : error ? (
-              <p className="text-center text-destructive py-2">Failed to load</p>
+              <p className="text-center text-destructive py-2">
+                Failed to load
+              </p>
             ) : pages?.length > 0 ? (
               <>
                 {pages.map(

@@ -95,7 +95,14 @@ export default function SignUp() {
   const handleSignUp = async (data: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
-      const result = await signUp(data.user_email, data.password);
+      const result = await signUp(data.user_email, data.password, {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        user_name: data.user_name,
+        user_mobile: data.user_mobile,
+        for_business_name: data.for_business_name,
+        for_business_number: data.for_business_number,
+      });
 
       if (
         result &&
@@ -103,9 +110,12 @@ export default function SignUp() {
         "user" in result &&
         result.user
       ) {
-        console.log("loged in");
+        console.log("User registered successfully with business data");
+        toast.success(
+          "Account created successfully! Please check your email to verify your account."
+        );
       } else {
-        toast.error("Invalid credentials");
+        toast.error("Failed to create account");
       }
       // form.reset();
     } catch (error) {

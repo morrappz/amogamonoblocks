@@ -1,5 +1,12 @@
 "use client";
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard } from "lucide-react";
+import {
+  BadgeCheck,
+  Bell,
+  ChevronsUpDown,
+  CreditCard,
+  Menu,
+  User,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -19,6 +26,7 @@ import {
 import Link from "next/link";
 import { SignOutButton } from "@/app/(auth)/signout-button";
 import { Session } from "@supabase/supabase-js";
+import { useAuth } from "@/context/supabase-provider";
 
 export function NavUser({
   user,
@@ -28,8 +36,7 @@ export function NavUser({
   iconOnlyLabel?: boolean;
 }) {
   const { isMobile } = useSidebar();
-
-  console.log("user------", user);
+  const { userCatalog } = useAuth();
 
   const initials = `${user?.email?.charAt(0) ?? ""}`.toUpperCase();
 
@@ -49,7 +56,7 @@ export function NavUser({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
+              {/* <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage
                   src={user?.user_metadata?.avatar_url}
                   alt={user?.email}
@@ -57,12 +64,15 @@ export function NavUser({
                 <AvatarFallback className="rounded-lg">
                   {initials}
                 </AvatarFallback>
-              </Avatar>
+              </Avatar> */}
+              <div className="flex items-center justify-center">
+                <Menu className="text-muted-foreground" />
+              </div>
               {!iconOnlyLabel && (
                 <>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      {user?.email}
+                      {userCatalog?.first_name} {userCatalog?.last_name}
                     </span>
                     <span className="truncate text-xs">{user?.email}</span>
                   </div>
@@ -90,7 +100,7 @@ export function NavUser({
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {/* {user?.user_name} */}
+                    {userCatalog?.first_name} {userCatalog?.last_name}
                   </span>
                   <span className="truncate text-xs">{user?.email}</span>
                 </div>
@@ -99,23 +109,29 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/settings/account">
-                  <BadgeCheck />
-                  Account
+                <Link href="/settings/profile">
+                  <User />
+                  Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings">
-                  <CreditCard />
-                  Billing
+                <Link href="/role-menu">
+                  <Menu />
+                  Role Menu
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/notifications">
+                <Link href="/notifications">
                   <Bell />
                   Notifications
                 </Link>
               </DropdownMenuItem>
+              {/* <DropdownMenuItem asChild>
+                <Link href="/settings/notifications">
+                  <Bell />
+                  Notifications
+                </Link>
+              </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>

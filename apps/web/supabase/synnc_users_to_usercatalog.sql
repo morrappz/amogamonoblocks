@@ -6,22 +6,57 @@ set search_path = public, auth, pg_temp
 as $$
 declare
   full_name text := null;
+  first_name_val text := null;
+  last_name_val text := null;
+  user_name_val text := null;
+  user_mobile_val text := null;
+  for_business_name_val text := null;
+  for_business_number_val text := null;
   updated_count int;
 begin
-  -- Safely extract full_name from raw_user_meta_data, if it exists
+  -- Safely extract data from raw_user_meta_data, if it exists
   if new.raw_user_meta_data ? 'full_name' then
     full_name := new.raw_user_meta_data ->> 'full_name';
   end if;
+  
+  if new.raw_user_meta_data ? 'first_name' then
+    first_name_val := new.raw_user_meta_data ->> 'first_name';
+  end if;
+  
+  if new.raw_user_meta_data ? 'last_name' then
+    last_name_val := new.raw_user_meta_data ->> 'last_name';
+  end if;
+  
+  if new.raw_user_meta_data ? 'user_name' then
+    user_name_val := new.raw_user_meta_data ->> 'user_name';
+  end if;
+  
+  if new.raw_user_meta_data ? 'user_mobile' then
+    user_mobile_val := new.raw_user_meta_data ->> 'user_mobile';
+  end if;
+  
+  if new.raw_user_meta_data ? 'for_business_name' then
+    for_business_name_val := new.raw_user_meta_data ->> 'for_business_name';
+  end if;
+  
+  if new.raw_user_meta_data ? 'for_business_number' then
+    for_business_number_val := new.raw_user_meta_data ->> 'for_business_number';
+  end if;
 
-    -- Try to update based on either user_id or user_email
+  -- Try to update based on either user_id or user_email
   update public.user_catalog
   set
-    user_id     = new.id,  -- optional, keeps data consistent if only email matched
-    user_email  = new.email,
-    user_mobile = new.phone,
-    first_name  = full_name,
-    business_number = new.email,
-    updated_at  = now()
+    user_id = new.id,
+    user_email = new.email,
+    user_mobile = coalesce(user_mobile_val, new.phone),
+    first_name = coalesce(first_name_val, full_name),
+    last_name = last_name_val,
+    user_name = user_name_val,
+    for_business_name = for_business_name_val,
+    for_business_number = for_business_number_val,
+    business_name = for_business_name_val,
+    business_number = for_business_number_val,
+    created_datetime = now()
   where user_id = new.id
      or user_email = new.email;
 
@@ -30,9 +65,29 @@ begin
   -- If no row was updated, insert new
   if updated_count = 0 then
     insert into public.user_catalog (
-      user_id, user_email, user_mobile, first_name, business_number, created_at, updated_at
+      user_id, 
+      user_email, 
+      user_mobile, 
+      first_name, 
+      last_name,
+      user_name,
+      for_business_name,
+      for_business_number,
+      business_name, 
+      business_number, 
+      created_datetime
     ) values (
-      new.id, new.email, new.phone, full_name, new.email,now(), now()
+      new.id, 
+      new.email, 
+      coalesce(user_mobile_val, new.phone), 
+      coalesce(first_name_val, full_name),
+      last_name_val,
+      user_name_val,
+      for_business_name_val,
+      for_business_number_val,
+      for_business_name_val,
+      for_business_number_val,
+      now()
     );
   end if;
 

@@ -1,11 +1,14 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/database";
+
+type UserCatalog = Database["public"]["Tables"]["user_catalog"]["Row"];
 
 // Create server-side Supabase client with proper cookie handling
 export async function createServerClient() {
   const cookieStore = await cookies();
 
-  return createClient(
+  return createClient<Database>(
     "https://supa.morr.biz",
     "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc0MTU5MzMwMCwiZXhwIjo0ODk3MjY2OTAwLCJyb2xlIjoiYW5vbiJ9.o-PdMUC3XYEAbvKL_xxd73YYvohrtdZPSdpItQWqoOI",
     {
@@ -147,4 +150,115 @@ export async function getSupabaseSessionMain() {
 
   // Fallback to automatic method
   return await getSupabaseSession();
+}
+
+// Get user catalog for server-side usage
+export async function getUserCatalog(
+  userId: string
+): Promise<UserCatalog | null> {
+  try {
+    const supabase = await createServerClient();
+
+    const { data: userCatalog, error } = await supabase
+      .from("user_catalog")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching user catalog:", error);
+      return null;
+    }
+
+    return userCatalog;
+  } catch (error) {
+    console.error("Exception in getUserCatalog:", error);
+    return null;
+  }
+}
+
+// Get allowed paths for server-side usage
+export async function getAllowedPaths(userId: string): Promise<any[] | null> {
+  try {
+    const supabase = await createServerClient();
+
+    // Type assertion needed as the RPC function might not be in generated types
+    const { data: paths, error } = await (supabase as any).rpc(
+      "get_allowed_paths",
+      {
+        user_uuid: userId,
+      }
+    );
+
+    if (error) {
+      console.error("Error fetching allowed paths:", error);
+      return null;
+    }
+
+    return paths || [];
+  } catch (error) {
+    console.error("Exception in getAllowedPaths:", error);
+    return null;
+  }
+}
+
+// Enhanced server-side auth function with userCatalog and permissions
+export async function getServerAuth() {
+  try {
+    const session = await getSupabaseSessionMain();
+
+    if (!session?.user) {
+      return {
+        session: null,
+        userCatalog: null,
+        allowedPaths: null,
+        allowedPages: null,
+        isAuthenticated: false,
+      };
+    }
+
+    // Fetch user catalog and permissions in parallel
+    const [userCatalog, allowedPathsData] = await Promise.all([
+      getUserCatalog(session.user.id),
+      getAllowedPaths(session.user.id),
+    ]);
+
+    // Extract allowed paths from the data
+    const allowedPaths = allowedPathsData
+      ? allowedPathsData.map((row: { page_link: string }) => row.page_link)
+      : [];
+
+    return {
+      session,
+      userCatalog,
+      allowedPaths,
+      allowedPages: allowedPathsData || [],
+      isAuthenticated: true,
+    };
+  } catch (error) {
+    console.error("Error in getServerAuth:", error);
+    return {
+      session: null,
+      userCatalog: null,
+      allowedPaths: null,
+      allowedPages: null,
+      isAuthenticated: false,
+    };
+  }
+}
+
+// Simplified function to check if user has access to a specific path
+export async function hasPathAccess(path: string): Promise<boolean> {
+  try {
+    const { allowedPaths, isAuthenticated } = await getServerAuth();
+
+    if (!isAuthenticated || !allowedPaths) {
+      return false;
+    }
+
+    return allowedPaths.includes(path);
+  } catch (error) {
+    console.error("Error checking path access:", error);
+    return false;
+  }
 }

@@ -2,7 +2,7 @@
 
 import { n8n } from "@/lib/n8n";
 import { postgrest } from "@/lib/postgrest";
-import { getSupabaseSessionMain } from "@/lib/supabase-server";
+import { getServerAuth, getSupabaseSessionMain } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 
 // Renamed: Represents configuration for a SINGLE platform
@@ -475,12 +475,12 @@ export async function deleteAIFieldsSettings(deleteId: string) {
 }
 
 export async function getAISettingsData() {
-  const session = await auth();
+  const auth = await getServerAuth();
   try {
     const { data, error } = await postgrest
       .from("user_catalog")
       .select("api_connection_json,user_catalog_id")
-      .eq("user_catalog_id", session?.user?.user_catalog_id)
+      .eq("user_catalog_id", auth?.userCatalog?.user_catalog_id)
       .single();
 
     if (error) {
@@ -494,14 +494,14 @@ export async function getAISettingsData() {
 }
 
 export async function saveAIFieldsSettings(payload, randomId: string) {
-  const session = await auth();
+  const auth = await getServerAuth();
   try {
     // Fetch existing settings
     const { data: userData, error: fetchError } = await postgrest
       .asAdmin()
       .from("user_catalog")
       .select("api_connection_json")
-      .eq("user_catalog_id", session?.user?.user_catalog_id)
+      .eq("user_catalog_id", auth?.userCatalog?.user_catalog_id)
       .single();
 
     if (fetchError) {
@@ -545,7 +545,7 @@ export async function saveAIFieldsSettings(payload, randomId: string) {
       .update({
         api_connection_json: updatedArray,
       })
-      .eq("user_catalog_id", session?.user?.user_catalog_id);
+      .eq("user_catalog_id", auth?.userCatalog?.user_catalog_id);
     if (error) {
       throw error;
     }

@@ -46,7 +46,7 @@ export default async function AuthenticatedLayout({
             </div>
           </Header>
           <NuqsAdapter>
-            <div className="pr-3 pl-3 h-full overflow-auto">{children}</div>
+            <main className="pr-3 pl-3 flex-1 overflow-auto">{children}</main>
           </NuqsAdapter>
         </div>
       </SidebarProvider>

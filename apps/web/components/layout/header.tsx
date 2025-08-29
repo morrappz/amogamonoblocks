@@ -7,6 +7,7 @@ import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import LocaleSwitcher from "./locale-switcher/LocaleSwitcher";
 import { usePathname } from "next/navigation";
 import { Search } from "./search";
+import { Bell } from "lucide-react";
 
 interface HeaderProps extends React.HTMLAttributes<HTMLElement> {
   fixed?: boolean;
@@ -85,14 +86,13 @@ export const Header = ({
           </div>
         )}
         <div className="">
-          <h1 className="text-lg font-medium tracking-tight">
-            {pageTitle}
-          </h1>
+          <h1 className="text-lg font-medium tracking-tight">{pageTitle}</h1>
         </div>
         <Search className="hidden sm:flex" />
         <div className={cn("flex items-center gap-2 sm:gap-4", className)}>
           {children}
           <LocaleSwitcher />
+          <Bell className="text-muted-foreground" />
           {endContent}
         </div>
       </div>
