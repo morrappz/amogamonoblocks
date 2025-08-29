@@ -8,6 +8,7 @@ import { NavUser } from "@/components/layout/nav-user";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { useAuth } from "@/context/supabase-provider";
 import { getSupabaseSession } from "@/lib/supabase-server";
+import { redirect } from "next/navigation";
 
 export default async function AuthenticatedLayout({
   children,
@@ -15,6 +16,10 @@ export default async function AuthenticatedLayout({
   children: React.ReactNode;
 }>) {
   const session = await getSupabaseSession();
+
+  if (!session) {
+    redirect("/sign-in");
+  }
 
   return (
     <div className="size-full">

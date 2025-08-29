@@ -4,7 +4,6 @@ import { WebView } from "react-native-webview";
 
 const LangchainChat = ({ userId }: { userId: string }) => {
 	const { session } = useAuth();
-	console.log("session-----", session);
 	const nextUrl = `http://localhost:3000/api/expo-login?email=${session?.user.email}&callbackUrl=/langchain-chat/chat`;
 
 	return (

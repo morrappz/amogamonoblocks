@@ -28,8 +28,6 @@ const Profile = () => {
   const { userCatalog } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
 
-  console.log("userCatalog", userCatalog);
-
   const profileSchema = z.object({
     first_name: z.string().min(1, "First name is required"),
     last_name: z.string().min(1, "Last name is required"),
@@ -91,6 +89,16 @@ const Profile = () => {
           {userCatalog?.first_name} {userCatalog?.last_name}
         </p>
         <p>{userCatalog?.user_mobile}</p>
+        {userCatalog?.roles_json?.length ? (
+          <div className="flex items-center space-x-2 pt-2">
+            Roles:
+            {userCatalog.roles_json.map((role: string) => (
+              <span key={role} className=" px-2 py-1 text-sm">
+                {role}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
       <div className="space-y-5 pt-5">
         <Card>
