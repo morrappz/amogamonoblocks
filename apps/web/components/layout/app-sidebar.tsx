@@ -20,7 +20,6 @@ export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { session: Session | null }) {
   const { state } = useSidebar();
-  console.log("session=======", session);
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>

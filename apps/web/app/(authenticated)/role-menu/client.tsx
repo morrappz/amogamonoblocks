@@ -23,7 +23,11 @@ import { Tables } from "@/types/database";
 import { createNewChatSession } from "@/app/(authenticated)/langchain-chat/lib/actions";
 import { toast } from "sonner";
 
-export default function ClientRoleMenu({ pages_list }: { pages_list: any[] }) {
+export default function ClientRoleMenu({
+  pages_list,
+}: {
+  pages_list: Tables<"page_list">[];
+}) {
   const [sort, setSort] = useState("ascending");
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
@@ -50,19 +54,17 @@ export default function ClientRoleMenu({ pages_list }: { pages_list: any[] }) {
     // For all other pages, the Link component will handle navigation normally
   };
 
-  // const filteredApps = pages
-  //   .sort((a, b) => {
-  //     const aName = a?.page_name ?? "";
-  //     const bName = b?.page_name ?? "";
-  //     return sort === "ascending"
-  //       ? aName.localeCompare(bName)
-  //       : bName.localeCompare(aName);
-  //   })
-  //   .filter((page) =>
-  //     page?.page_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  //   );
-
-  // console.log("filteredApps----", filteredApps);
+  const filteredApps = pages_list
+    .sort((a, b) => {
+      const aName = a?.page_name ?? "";
+      const bName = b?.page_name ?? "";
+      return sort === "ascending"
+        ? aName.localeCompare(bName)
+        : bName.localeCompare(aName);
+    })
+    .filter((page) =>
+      page?.page_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   return (
     <>
@@ -100,7 +102,7 @@ export default function ClientRoleMenu({ pages_list }: { pages_list: any[] }) {
       </div>
       <Separator className="shadow" />
       <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pb-16 pt-4 md:grid-cols-2 lg:grid-cols-3">
-        {pages_list.map((page) => (
+        {filteredApps.map((page) => (
           <Link href={page.page_link || ""} key={page.page_name}>
             <li
               key={page.page_name}

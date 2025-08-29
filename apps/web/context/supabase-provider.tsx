@@ -152,8 +152,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    console.log("session============id==========", session.user.id);
-
     // Run both fetch operations in parallel for better performance
     await Promise.all([fetchUserCatalogAndPermissions(session.user.id)]);
     console.log("Refresh complete.");
