@@ -8,6 +8,7 @@ import LocaleSwitcher from "./locale-switcher/LocaleSwitcher";
 import { usePathname } from "next/navigation";
 import { Search } from "./search";
 import { Bell } from "lucide-react";
+import Link from "next/link";
 
 interface HeaderProps extends React.HTMLAttributes<HTMLElement> {
   fixed?: boolean;
@@ -92,7 +93,9 @@ export const Header = ({
         <div className={cn("flex items-center gap-2 sm:gap-4", className)}>
           {children}
           <LocaleSwitcher />
-          <Bell className="text-muted-foreground" />
+          <Link href="/notifications">
+            <Bell className="text-muted-foreground" />
+          </Link>
           {endContent}
         </div>
       </div>
