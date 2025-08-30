@@ -446,3 +446,18 @@ export const anthropicModels = {
     cacheReadsPrice: 0.03,
   },
 } as const satisfies Record<string, ModelInfo>; // as const assertion makes the object deeply readonly
+
+export type MistralModelId = keyof typeof mistralModels;
+export const mistralDefaultModelId: MistralModelId = "mistral-large-latest";
+export const mistralModels = {
+  "mistral-large-latest": {
+    maxTokens: 4096,
+    contextWindow: 200_000,
+    supportsImages: true,
+    supportsPromptCache: true,
+    inputPrice: 0.25,
+    outputPrice: 1.25,
+    cacheWritesPrice: 0.3,
+    cacheReadsPrice: 0.03,
+  },
+};

@@ -3,16 +3,13 @@
 import { postgrest } from "@/lib/postgrest";
 import IpAddress from "./IPAddress";
 import getCurrentBrowser from "./getCurrentBrowser";
-import {
-  getSupabaseSession,
-  getSupabaseSessionMain,
-} from "@/lib/supabase-server";
+import { auth } from "@/auth";
 
 // import getUserOS from "./getCurrentOS";
 // import getUserLocation from "./geoLocation";
 
 export async function saveUserLogs(payload) {
-  const session = await getSupabaseSessionMain();
+  const session = await auth();
   const payloadData = {
     ...payload,
     user_ip_address: await IpAddress(),
@@ -33,10 +30,8 @@ export async function saveUserLogs(payload) {
       .from("user_log")
       .insert(payloadData);
     if (error) throw error;
-    console.log("here==================", data);
     return { data, success: true };
   } catch (error) {
-    console.error("error==============", error);
     throw error;
   }
 }

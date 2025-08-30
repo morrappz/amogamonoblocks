@@ -9,7 +9,7 @@ import { SearchProvider } from "@/context/search-context";
 import { cn } from "@/lib/utils";
 import { DialogModel } from "@/components/modal/global-model";
 import NextTopLoader from "nextjs-toploader";
-import { AuthProvider } from "@/context/supabase-provider";
+import { SessionProvider } from "next-auth/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,33 +41,33 @@ export default async function RootLayout({
       <body
         className={cn(geistSans.variable, geistMono.variable, "antialiased")}
       >
-        <AuthProvider>
-          <NextIntlClientProvider messages={messages}>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-              themes={[
-                "light",
-                "dark",
-                "zinc",
-                "blue",
-                "green",
-                "violet",
-                "neo",
-                "bubble",
-              ]}
-            >
-              <SearchProvider>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            themes={[
+              "light",
+              "dark",
+              "zinc",
+              "blue",
+              "green",
+              "violet",
+              "neo",
+              "bubble",
+            ]}
+          >
+            <SearchProvider>
+              <SessionProvider>
                 <NextTopLoader />
                 {children}
-              </SearchProvider>
-            </ThemeProvider>
-          </NextIntlClientProvider>
-          <Toaster richColors />
-          <DialogModel />
-        </AuthProvider>
+              </SessionProvider>
+            </SearchProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
+        <Toaster richColors />
+        <DialogModel />
       </body>
     </html>
   );

@@ -11,14 +11,14 @@ import { getErrorMessage } from "@/lib/handle-error";
 import { UploadAttachment } from "@/lib/minio";
 
 import { Message } from "../type";
-import { getSupabaseSession } from "@/lib/supabase-server";
+import { auth } from "@/auth";
 
 export async function createRecord(
   input: CreateContactSchema & { file?: File }
 ) {
   unstable_noStore();
   try {
-    const session = await getSupabaseSession();
+    const session = await auth();
 
     if (input.file) {
       const result = await UploadAttachment({

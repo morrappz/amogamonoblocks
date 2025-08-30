@@ -1,6 +1,6 @@
 "use server";
+import { auth } from "@/auth";
 import { Client } from "minio";
-import { getSupabaseSessionMain } from "./supabase-server";
 
 const minioClient = new Client({
   endPoint: process.env.MINIO_S3_URL ?? "",
@@ -13,7 +13,7 @@ const minioClient = new Client({
 });
 
 export async function listFolders(context?: string, subContext?: string) {
-  const session = await getSupabaseSessionMain();
+  const session = await auth();
   const business_number = session?.user?.business_number;
   const user_name = session?.user?.user_name;
 

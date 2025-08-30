@@ -25,8 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { SignOutButton } from "@/app/(auth)/signout-button";
-import { Session } from "@supabase/supabase-js";
-import { useAuth } from "@/context/supabase-provider";
+import { Session } from "next-auth";
 
 export function NavUser({
   user,
@@ -36,9 +35,10 @@ export function NavUser({
   iconOnlyLabel?: boolean;
 }) {
   const { isMobile } = useSidebar();
-  const { userCatalog } = useAuth();
 
-  const initials = `${user?.email?.charAt(0) ?? ""}`.toUpperCase();
+  const initials = `${user?.first_name?.charAt(0) ?? ""}${
+    user?.last_name?.charAt(0) ?? ""
+  }`.toUpperCase();
 
   return (
     <SidebarMenu className={iconOnlyLabel ? "w-8 p-0" : ""}>
@@ -72,9 +72,9 @@ export function NavUser({
                 <>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      {userCatalog?.first_name} {userCatalog?.last_name}
+                      {user?.user_name}
                     </span>
-                    <span className="truncate text-xs">{user?.email}</span>
+                    <span className="truncate text-xs">{user?.user_email}</span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />
                 </>
@@ -90,19 +90,16 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage
-                    src={user?.user_metadata?.avatar_url}
-                    alt={user?.email}
-                  />
+                  <AvatarImage src={user?.avatar_url} alt={user?.user_name} />
                   <AvatarFallback className="rounded-lg">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {userCatalog?.first_name} {userCatalog?.last_name}
+                    {user?.user_name}
                   </span>
-                  <span className="truncate text-xs">{user?.email}</span>
+                  <span className="truncate text-xs">{user?.user_email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

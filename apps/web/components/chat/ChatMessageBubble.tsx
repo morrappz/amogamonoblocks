@@ -13,6 +13,7 @@ import {
   Copy,
   Ellipsis,
   Heart,
+  Loader,
   Star,
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
@@ -25,7 +26,7 @@ import ShareMenu from "./MenuItems/ShareMenu";
 import RenderTable from "./RenderTable";
 import AnalyticCardFileApi from "./AnalyticCardFileApi/AnalyticCardFileApi";
 import ShareFileMenu from "./AnalyticCardFileApi/ShareMenu";
-import { useAuth } from "@/context/supabase-provider";
+import { useSession } from "next-auth/react";
 
 type Message = {
   id: string;
@@ -54,6 +55,7 @@ interface Props {
     rows: string[][];
   } | null;
   messages: Message[]; // <-- add messages array
+  loading: boolean;
 }
 
 export const ChatMessageBubble = React.memo(function ChatMessageBubble(
@@ -68,8 +70,9 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble(
     analyticCardWithFileApi,
     table,
     messages,
+    loading,
   } = props;
-  const { session } = useAuth();
+  const { data: session } = useSession();
 
   // State to track the icon status from the corresponding user prompt
   const [iconStatus, setIconStatus] = useState({
@@ -176,6 +179,21 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble(
     toast.success("Message Copied Successfully");
   };
 
+  // if (loading && message.role === "assistant") {
+  //   return (
+  //     <div className="mb-8 flex flex-col items-start">
+  //       <div className="mb-1 w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground">
+  //         {props.aiEmoji}
+  //       </div>
+  //       <div className="rounded-[24px] px-4 py-2 md:max-w-[80%] max-w-[95%] text-muted-foreground">
+  //         <p className="flex items-center gap-2.5">
+  //           <Loader className="animate-spin h-4 w-4" /> Generating Response...
+  //         </p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
   return (
     <div
       className={cn(
@@ -185,7 +203,7 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble(
     >
       <div className="mb-1 w-10 h-10 rounded-full flex items-center justify-center  text-muted-foreground">
         {message.role === "user"
-          ? session?.user?.email?.[0]?.toUpperCase()
+          ? session?.user?.user_name?.[0]?.toUpperCase()
           : props.aiEmoji}
       </div>
 

@@ -1,12 +1,12 @@
 "use server";
 
+import { auth } from "@/auth";
 import { postgrest } from "@/lib/postgrest";
-import { getServerAuth, getSupabaseSessionMain } from "@/lib/supabase-server";
 import { v4 as uuidv4 } from "uuid";
 
 export async function getChatHistory(chatGroup: string) {
-  const auth = await getServerAuth();
-  const userId = auth?.userCatalog?.user_catalog_id;
+  const session = await auth();
+  const userId = session?.user?.user_catalog_id;
   try {
     const { data, error } = await postgrest
       .from("chat")
@@ -24,8 +24,8 @@ export async function getChatHistory(chatGroup: string) {
 }
 
 export async function getChatImportant(chatGroup: string) {
-  const auth = await getServerAuth();
-  const userId = auth?.userCatalog?.user_catalog_id;
+  const session = await auth();
+  const userId = session?.user?.user_catalog_id;
   try {
     const { data, error } = await postgrest
       .asAdmin()
@@ -44,8 +44,8 @@ export async function getChatImportant(chatGroup: string) {
 }
 
 export async function getChatFavorites(chatGroup: string) {
-  const auth = await getServerAuth();
-  const userId = auth?.userCatalog?.user_catalog_id;
+  const session = await auth();
+  const userId = session?.user?.user_catalog_id;
   try {
     const { data, error } = await postgrest
       .asAdmin()
@@ -66,17 +66,17 @@ export async function getChatFavorites(chatGroup: string) {
 }
 
 export async function createChat(payload) {
-  const auth = await getServerAuth();
+  const session = await auth();
   try {
     const { data, error } = await postgrest.from("chat").insert({
       ...payload,
-      business_number: auth?.userCatalog?.business_number,
-      created_user_id: auth?.userCatalog?.user_catalog_id,
-      business_name: auth?.userCatalog?.business_name,
-      created_user_name: auth?.userCatalog?.user_name,
-      user_email: auth?.userCatalog?.user_email,
-      for_business_number: auth?.userCatalog?.for_business_number,
-      for_business_name: auth?.userCatalog?.for_business_name,
+      business_number: session?.user?.business_number,
+      created_user_id: session?.user?.user_catalog_id,
+      business_name: session?.user?.business_name,
+      created_user_name: session?.user?.user_name,
+      user_email: session?.user?.user_email,
+      for_business_number: session?.user?.for_business_number,
+      for_business_name: session?.user?.for_business_name,
     });
     if (error) throw error;
     return { data, success: true };
@@ -86,8 +86,7 @@ export async function createChat(payload) {
 }
 
 export async function createNewChatSession() {
-  const auth = await getServerAuth();
-  console.log("auth==========", auth);
+  const session = await auth();
   try {
     const newChatId = uuidv4();
     const initialMessageId = uuidv4();
@@ -100,15 +99,15 @@ export async function createNewChatSession() {
       title: "New Chat",
       chat_group: "LangStarter",
       status: "active",
-      user_id: auth.userCatalog?.user_catalog_id,
+      user_id: session?.user?.user_catalog_id,
       createdAt: new Date().toISOString(),
-      business_number: auth?.userCatalog?.business_number,
-      created_user_id: auth?.userCatalog?.user_catalog_id,
-      business_name: auth?.userCatalog?.business_name,
-      created_user_name: auth?.userCatalog?.user_name,
-      user_email: auth?.userCatalog?.user_email,
-      for_business_number: auth?.userCatalog?.for_business_number,
-      for_business_name: auth?.userCatalog?.for_business_name,
+      business_number: session?.user?.business_number,
+      created_user_id: session?.user?.user_catalog_id,
+      business_name: session?.user?.business_name,
+      created_user_name: session?.user?.user_name,
+      user_email: session?.user?.user_email,
+      for_business_number: session?.user?.for_business_number,
+      for_business_name: session?.user?.for_business_name,
       share_token: shareToken,
       share_url: shareUrl,
     });
@@ -120,10 +119,10 @@ export async function createNewChatSession() {
       id: initialMessageId,
       chatId: newChatId,
       role: "assistant",
-      content: `Hello ${auth?.userCatalog?.user_name}! How can I help you today?`,
+      content: `Hello ${session?.user?.user_name}! How can I help you today?`,
       chat_group: "LangStarter",
       status: "active",
-      user_id: auth?.userCatalog?.user_catalog_id,
+      user_id: session?.user?.user_catalog_id,
       createdAt: new Date().toISOString(),
       isLike: false,
       bookmark: false,
@@ -161,7 +160,7 @@ export async function saveMessage(payload) {
 }
 
 export async function getMessagesByChatId(chatId: string) {
-  const auth = await getServerAuth();
+  const session = await auth();
   try {
     const { data, error } = await postgrest
       .asAdmin()
@@ -186,14 +185,14 @@ export async function getMessagesByPromptUuid(promptUuid: string | null) {
     return [];
   }
 
-  const auth = await getServerAuth();
+  const session = await auth();
   try {
     const { data, error } = await postgrest
       .asAdmin()
       .from("message")
       .select("*")
       .eq("prompt_uuid", promptUuid)
-      .eq("user_id", auth?.userCatalog?.user_catalog_id)
+      .eq("user_id", session?.user?.user_catalog_id)
       .order("createdAt", { ascending: true });
 
     if (error) throw error;
@@ -205,14 +204,14 @@ export async function getMessagesByPromptUuid(promptUuid: string | null) {
 }
 
 export async function getMessageById(messageId: string) {
-  const auth = await getServerAuth();
+  const session = await auth();
   try {
     const { data, error } = await postgrest
       .asAdmin()
       .from("message")
       .select("id,chatId,role,content,prompt_uuid")
       .eq("id", messageId)
-      .eq("user_id", auth?.userCatalog?.user_catalog_id)
+      .eq("user_id", session?.user?.user_catalog_id)
       .maybeSingle();
     if (error) throw error;
     return data;
@@ -337,12 +336,12 @@ export async function updateMessageStatus({
 }
 
 export async function getFormSetupData() {
-  const auth = await getServerAuth();
+  const session = await auth();
   try {
     const { data, error } = await postgrest
       .from("form_setup")
       .select("form_id,form_name,status,data_api_url,api_connection_json")
-      .filter("users_json", "cs", `["${auth?.userCatalog?.user_email}"]`);
+      .filter("users_json", "cs", `["${session?.user?.user_email}"]`);
     if (error) throw error;
     return data;
   } catch (error) {
@@ -366,13 +365,13 @@ export async function fetchFormSetupData(formId: string) {
 }
 
 export async function fetchChatTitle(id?: string) {
-  const auth = await getServerAuth();
+  const session = await auth();
   try {
     const { data, error } = await postgrest
       .from("chat")
       .select("title,bookmark,createdAt,share_token")
       .eq("id", id)
-      .eq("user_id", auth?.userCatalog?.user_catalog_id)
+      .eq("user_id", session?.user?.user_catalog_id)
       .single();
     if (error) throw error;
     return data;
@@ -387,13 +386,13 @@ export async function updateChatTitle(
   bookmark: boolean,
   id?: string
 ) {
-  const auth = await getServerAuth();
+  const session = await auth();
   try {
     const { data, error } = await postgrest
       .from("chat")
       .update({ title, bookmark })
       .eq("id", id)
-      .eq("user_id", auth?.userCatalog?.user_catalog_id)
+      .eq("user_id", session?.user?.user_catalog_id)
       .single();
     if (error) throw error;
     return data;
@@ -404,14 +403,14 @@ export async function updateChatTitle(
 }
 
 export async function getChatBookMarks(chatGroup: string) {
-  const auth = await getServerAuth();
+  const session = await auth();
   try {
     const { data, error } = await postgrest
       .from("chat")
       .select("id,title,bookmark,createdAt")
       .eq("chat_group", chatGroup)
       .eq("bookmark", true)
-      .eq("user_id", auth?.userCatalog?.user_catalog_id)
+      .eq("user_id", session?.user?.user_catalog_id)
       .order("createdAt", { ascending: false });
     if (error) throw error;
     return data;

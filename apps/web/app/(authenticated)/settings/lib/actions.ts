@@ -1,7 +1,6 @@
 "use server";
 
 import { postgrest } from "@/lib/postgrest";
-import { getServerAuth } from "@/lib/supabase-server";
 
 interface ProfileSettingsData {
   first_name: string;
@@ -19,11 +18,8 @@ interface ProfileSettingsData {
 
 export async function updateProfileSettings(
   data: ProfileSettingsData,
-  userCatalogId: number
+  userCatalogId: number | null
 ) {
-  // Don't rely on server auth for server actions, use the passed ID
-  console.log("userCatalogId from client:", userCatalogId);
-
   if (!userCatalogId) {
     throw new Error("User catalog ID is required");
   }

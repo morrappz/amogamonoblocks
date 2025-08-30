@@ -12,6 +12,7 @@ import {
   LineElement,
   BarElement,
   Title,
+  RadialLinearScale,
 } from "chart.js";
 import React from "react";
 
@@ -24,15 +25,18 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
-  Title
+  Title,
+  RadialLinearScale
 );
 
 type ChartDataProps = {
   chartData: {
     type: string;
     title: string;
-    labels: string[];
-    data: number[];
+    labels?: string[];
+    data: number[] | { label: string; value: number }[];
+    xAxis?: string;
+    yAxis?: string;
   };
 };
 
@@ -41,7 +45,26 @@ export const ChartRenderer = ({ chartData }: ChartDataProps) => {
     return <div>Invalid chart data</div>;
   }
 
-  const { type, title, labels, data } = chartData;
+  const { type, title } = chartData;
+
+  // Handle both data formats
+  let labels: string[];
+  let data: number[];
+
+  if (Array.isArray(chartData.data) && chartData.data.length > 0) {
+    if (typeof chartData.data[0] === "object" && "label" in chartData.data[0]) {
+      // New format: array of {label, value} objects
+      const objectData = chartData.data as { label: string; value: number }[];
+      labels = objectData.map((d) => d.label);
+      data = objectData.map((d) => d.value);
+    } else {
+      // Old format: separate labels and data arrays
+      labels = chartData.labels || [];
+      data = chartData.data as number[];
+    }
+  } else {
+    return <div>Invalid chart data format</div>;
+  }
 
   const config = {
     data: {
