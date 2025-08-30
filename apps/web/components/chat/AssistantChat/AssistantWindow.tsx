@@ -71,7 +71,7 @@ import Assistants from "../MenuItems/Assistants";
 import { AssistantData, ChartData, Content, Query } from "../types/types";
 import { AssistantMessages } from "./AssistantMessages";
 import { AssistantLayout } from "./AssistantLayout";
-import { useAuth } from "@/context/supabase-provider";
+import { useSession } from "next-auth/react";
 
 // type Message = {
 //   id: string;
@@ -263,7 +263,7 @@ export function AssistantWindow(props: {
     saveLogs();
   }, []);
 
-  const { session } = useAuth();
+  const { data: session } = useSession();
 
   // Function to update message status
   const handleUpdateMessage = async (

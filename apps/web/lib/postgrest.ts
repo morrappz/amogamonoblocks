@@ -1,7 +1,6 @@
 import { PostgrestClient } from "@supabase/postgrest-js";
 import { Database } from "@/types/database";
-import { getServerAuth } from "./supabase-server";
-
+import { auth } from "@/auth";
 // @ts-expect-error Could not find a declaration file for module '@supabase/node-fetch'
 import { Headers as NodeFetchHeaders } from "@supabase/node-fetch";
 
@@ -189,12 +188,12 @@ export class postgrest {
   }
 
   private async _getSession() {
-    const auth = await getServerAuth();
+    const session = await auth();
     return {
-      id: auth?.userCatalog?.user_catalog_id ?? null,
-      user_name: auth?.userCatalog?.user_name ?? null,
-      business_number: auth?.userCatalog?.business_number ?? null,
-      for_business_number: auth?.userCatalog?.for_business_number ?? null,
+      id: session?.user?.user_catalog_id ?? null,
+      user_name: session?.user?.user_name ?? null,
+      business_number: session?.user?.business_number ?? null,
+      for_business_number: session?.user?.for_business_number ?? null,
     };
   }
 }

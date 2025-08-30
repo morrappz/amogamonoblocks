@@ -15,7 +15,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/context/supabase-provider";
 import { postgrest } from "@/lib/postgrest";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
@@ -23,9 +22,10 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { updateProfileSettings } from "../lib/actions";
+import { useSession } from "next-auth/react";
 
 const Profile = () => {
-  const { userCatalog } = useAuth();
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = React.useState(false);
 
   const profileSchema = z.object({
@@ -45,29 +45,31 @@ const Profile = () => {
     country: z.string().optional(),
   });
 
+  console.log("session-----", session);
+
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema as any),
     defaultValues: {
-      first_name: userCatalog?.first_name || "",
-      last_name: userCatalog?.last_name || "",
-      user_email: userCatalog?.user_email || "",
+      first_name: session?.user?.first_name || "",
+      last_name: session?.user?.last_name || "",
+      user_email: session?.user?.user_email || "",
       account_status:
-        (userCatalog?.status as "active" | "inactive") || "active",
-      business_name: userCatalog?.business_name || "",
-      address_1: userCatalog?.business_address_1 || "",
-      address_2: userCatalog?.business_address_2 || "",
-      city: userCatalog?.business_city || "",
-      state: userCatalog?.business_state || "",
-      postcode: userCatalog?.business_postcode || "",
-      country: userCatalog?.business_country || "",
+        (session?.user?.status as "active" | "inactive") || "active",
+      business_name: session?.user?.business_name || "",
+      address_1: session?.user?.business_address_1 || "",
+      address_2: session?.user?.business_address_2 || "",
+      city: session?.user?.business_city || "",
+      state: session?.user?.business_state || "",
+      postcode: session?.user?.business_postcode || "",
+      country: session?.user?.business_country || "",
     },
   });
 
   const onSubmit = async (data: z.infer<typeof profileSchema>) => {
-    if (!userCatalog) return;
+    if (!session) return;
     setIsLoading(true);
     try {
-      await updateProfileSettings(data, userCatalog?.user_catalog_id);
+      await updateProfileSettings(data, session?.user?.user_catalog_id);
       toast.success("Profile updated successfully");
     } catch (error: any) {
       console.error("Error submitting form:", error);
@@ -83,16 +85,16 @@ const Profile = () => {
     <div className="max-w-[800px] py-5 mx-auto pb-10 ">
       <div className="flex items-center justify-center flex-col">
         <div className="bg-accent w-10 h-10 text-center p-2.5 rounded-full">
-          <p>{userCatalog?.first_name?.[0].toUpperCase()}</p>
+          <p>{session?.user?.first_name?.[0].toUpperCase()}</p>
         </div>
         <p className="font-semibold text-2xl">
-          {userCatalog?.first_name} {userCatalog?.last_name}
+          {session?.user?.first_name} {session?.user?.last_name}
         </p>
-        <p>{userCatalog?.user_mobile}</p>
-        {userCatalog?.roles_json?.length ? (
+        <p>{session?.user?.user_mobile}</p>
+        {session?.user?.roles_json?.length ? (
           <div className="flex items-center space-x-2 pt-2">
             Roles:
-            {userCatalog.roles_json.map((role: string) => (
+            {session.user.roles_json.map((role: string) => (
               <span key={role} className=" px-2 py-1 text-sm">
                 {role}
               </span>

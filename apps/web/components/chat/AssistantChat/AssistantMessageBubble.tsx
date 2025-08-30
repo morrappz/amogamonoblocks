@@ -24,7 +24,7 @@ import AnalyticCard from "./AnalyticCard";
 import { AssistantData, ChartData, Query } from "../types/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/context/supabase-provider";
+import { useSession } from "next-auth/react";
 
 type Message = {
   id: string;
@@ -62,7 +62,7 @@ export const AssistantMessageBubble = React.memo(function ChatMessageBubble(
   props: Props
 ) {
   const { message, onUpdateMessage, parsedMessage } = props;
-  const { session } = useAuth();
+  const { data: session } = useSession();
   const [displayMenu, setDisplayMenu] = useState(false);
 
   const assistantResponse = Array.isArray(parsedMessage) ? (
@@ -190,7 +190,7 @@ export const AssistantMessageBubble = React.memo(function ChatMessageBubble(
     >
       <div className="mb-1 w-10 h-10 rounded-full flex items-center justify-center  text-muted-foreground">
         {message.role === "user"
-          ? session?.user?.email?.[0]?.toUpperCase()
+          ? session?.user?.user_name?.[0]?.toUpperCase()
           : props.aiEmoji}
       </div>
 

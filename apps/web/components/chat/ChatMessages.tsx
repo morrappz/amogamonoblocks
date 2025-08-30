@@ -20,10 +20,25 @@ export const ChatMessages = React.memo(function ChatMessages(props: {
   onUpdateMessage: (messageId: string, updates: Partial<Message>) => void;
   onBookmarkUpdate?: () => void;
   onFavoriteUpdate?: () => void;
+  loading: boolean;
 }) {
   // Helper function to check if JSON is complete and valid
   const isCompleteJSON = useCallback((content: string) => {
-    const trimmed = content.trim();
+    let trimmed = content.trim();
+
+    // Check if content is wrapped in markdown code blocks and unwrap it
+    if (trimmed.startsWith("```json") && trimmed.endsWith("```")) {
+      trimmed = trimmed
+        .replace(/^```json\s*/, "")
+        .replace(/\s*```$/, "")
+        .trim();
+    } else if (trimmed.startsWith("```") && trimmed.endsWith("```")) {
+      trimmed = trimmed
+        .replace(/^```\s*/, "")
+        .replace(/\s*```$/, "")
+        .trim();
+    }
+
     if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
       return false;
     }
@@ -60,7 +75,16 @@ export const ChatMessages = React.memo(function ChatMessages(props: {
       }
     }
 
-    return braceCount === 0;
+    if (braceCount === 0) {
+      try {
+        JSON.parse(trimmed);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    return false;
   }, []);
 
   // Helper function to parse message content and extract chart data
@@ -71,15 +95,33 @@ export const ChatMessages = React.memo(function ChatMessages(props: {
         return {
           parsedContent: content,
           chartType: null,
+          analyticCard: null,
+          analyticCardWithFileApi: null,
+          table: null,
         };
       }
 
       try {
-        const parsedMsg = JSON.parse(content);
+        // Remove markdown code blocks if present
+        let trimmed = content.trim();
+        if (trimmed.startsWith("```json") && trimmed.endsWith("```")) {
+          trimmed = trimmed
+            .replace(/^```json\s*/, "")
+            .replace(/\s*```$/, "")
+            .trim();
+        } else if (trimmed.startsWith("```") && trimmed.endsWith("```")) {
+          trimmed = trimmed
+            .replace(/^```\s*/, "")
+            .replace(/\s*```$/, "")
+            .trim();
+        }
+
+        const parsedMsg = JSON.parse(trimmed);
+
         // Only return parsed data if it has the expected structure
         if (parsedMsg && typeof parsedMsg === "object") {
           return {
-            parsedContent: parsedMsg.content,
+            parsedContent: parsedMsg.content || content,
             chartType: parsedMsg.chart || null,
             analyticCard: parsedMsg.analyticCard || null,
             analyticCardWithFileApi: parsedMsg.analyticCardWithFileApi || null,
@@ -149,6 +191,7 @@ export const ChatMessages = React.memo(function ChatMessages(props: {
             messages={props.messages}
             onBookmarkUpdate={props.onBookmarkUpdate}
             onFavoriteUpdate={props.onFavoriteUpdate}
+            loading={props.loading}
           />
         );
       })}

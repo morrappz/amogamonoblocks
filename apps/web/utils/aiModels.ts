@@ -5,6 +5,8 @@ import {
   geminiModels,
   openAiNativeDefaultModelId,
   openAiNativeModels,
+  mistralModels,
+  mistralDefaultModelId,
 } from "@/data/models";
 
 export const PROVIDER_MODELS: Record<
@@ -14,4 +16,5 @@ export const PROVIDER_MODELS: Record<
   google: { models: geminiModels, default: geminiDefaultModelId },
   openai: { models: openAiNativeModels, default: openAiNativeDefaultModelId },
   anthropic: { models: anthropicModels, default: anthropicDefaultModelId },
+  mistral: { models: mistralModels, default: mistralDefaultModelId },
 };

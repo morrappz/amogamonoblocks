@@ -13,7 +13,7 @@ import { NavGroup } from "@/components/layout/nav-group";
 import { NavUser } from "@/components/layout/nav-user";
 import { sidebarData } from "./sidebar-data";
 import { LayoutDashboard } from "lucide-react";
-import { Session } from "@supabase/supabase-js";
+import { Session } from "next-auth";
 
 export function AppSidebar({
   session,
@@ -33,9 +33,11 @@ export function AppSidebar({
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-semibold">
-                {session?.user?.user_metadata?.email}
+                {session?.user?.business_name}
               </span>
-              <span className="truncate text-xs">{session?.user?.email}</span>
+              <span className="truncate text-xs">
+                {session?.user?.app_name}
+              </span>
             </div>
           </SidebarMenuButton>
           {state !== "collapsed" && (

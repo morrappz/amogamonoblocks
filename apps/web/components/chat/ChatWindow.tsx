@@ -82,7 +82,7 @@ import ChatName from "./ChatName";
 import Important from "./MenuItems/Important";
 import ChatBookMarks from "./MenuItems/ChatBookMarks";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/context/supabase-provider";
+import { useSession } from "next-auth/react";
 
 type Message = {
   id: string;
@@ -295,7 +295,7 @@ export function ChatWindow(props: {
   //   saveLogs();
   // }, []);
 
-  const { session, userCatalog } = useAuth();
+  const { data: session } = useSession();
 
   const chat = useChat({
     api: props.endpoint,
@@ -304,6 +304,8 @@ export function ChatWindow(props: {
       language: selectedLanguage,
       aiModel: selectedAIModel,
     },
+    streamMode: "text",
+    keepLastMessageOnError: true,
     onResponse(response) {
       const sourcesHeader = response.headers.get("x-sources");
       const sources = sourcesHeader
@@ -318,7 +320,6 @@ export function ChatWindow(props: {
         });
       }
     },
-    streamMode: "text",
     onError: (e) =>
       toast.error(`Error while processing your request`, {
         description: e.message,
@@ -338,27 +339,27 @@ export function ChatWindow(props: {
           }
 
           // Fetch usage data separately
-          let usageData = null;
-          try {
-            const usageResponse = await fetch(`${props.endpoint}/usage`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                messages: chatRef.current?.messages || [],
-                language: selectedLanguage,
-                aiModel: selectedAIModel,
-              }),
-            });
+          // let usageData = null;
+          // try {
+          //   const usageResponse = await fetch(`${props.endpoint}/usage`, {
+          //     method: "POST",
+          //     headers: {
+          //       "Content-Type": "application/json",
+          //     },
+          //     body: JSON.stringify({
+          //       messages: chatRef.current?.messages || [],
+          //       language: selectedLanguage,
+          //       aiModel: selectedAIModel,
+          //     }),
+          //   });
 
-            if (usageResponse.ok) {
-              const usageResult = await usageResponse.json();
-              usageData = usageResult.usage;
-            }
-          } catch (error) {
-            console.warn("Failed to fetch usage data:", error);
-          }
+          //   if (usageResponse.ok) {
+          //     const usageResult = await usageResponse.json();
+          //     usageData = usageResult.usage;
+          //   }
+          // } catch (error) {
+          //   console.warn("Failed to fetch usage data:", error);
+          // }
 
           // Save the original message content to the database
           await saveMessage({
@@ -368,15 +369,15 @@ export function ChatWindow(props: {
             content: message.content, // Save original content
             chat_group: "LangStarter",
             status: "active",
-            user_id: userCatalog?.user_catalog_id || "",
+            user_id: session?.user?.user_catalog_id || "",
             createdAt: new Date().toISOString(),
             isLike: false,
             bookmark: false,
             important: false,
             favorite: false,
-            prompt_tokens: usageData?.input_tokens,
-            completion_tokens: usageData?.output_tokens,
-            total_tokens: usageData?.total_tokens,
+            // prompt_tokens: usageData?.input_tokens,
+            // completion_tokens: usageData?.output_tokens,
+            // total_tokens: usageData?.total_tokens,
             prompt_uuid: promptId,
           });
           // handleHistory();
@@ -505,7 +506,7 @@ export function ChatWindow(props: {
       setMessagesLoaded(false); // Reset loading state
 
       // Allow loading if we have an ID and either user is logged in OR it's a shared chat
-      if (id && (userCatalog?.user_catalog_id || isSharedChat)) {
+      if (id && (session?.user?.user_catalog_id || isSharedChat)) {
         try {
           const existingMessages = await getMessagesByChatId(id);
           if (existingMessages && existingMessages.length > 0) {
@@ -542,7 +543,7 @@ export function ChatWindow(props: {
       // Set initial load to false after first load
       setTimeout(() => setIsInitialLoad(false), 100);
     },
-    [userCatalog?.user_catalog_id]
+    [session?.user?.user_catalog_id]
   );
 
   // Effect for loading shared chat
@@ -607,7 +608,7 @@ export function ChatWindow(props: {
         title: "New Chat", // Use "New Chat" instead of user message
         chat_group: "LangStarter",
         status: "active",
-        user_id: userCatalog?.user_catalog_id,
+        user_id: session?.user?.user_catalog_id,
         createdAt: new Date().toISOString(),
         share_token: shareToken,
         share_url: shareUrl,
@@ -657,7 +658,7 @@ export function ChatWindow(props: {
           content: msg.content,
           chat_group: "LangStarter",
           status: "active",
-          user_id: userCatalog?.user_catalog_id || "",
+          user_id: session?.user?.user_catalog_id || "",
           createdAt: new Date().toISOString(),
           isLike: false,
           bookmark: false,
@@ -710,7 +711,7 @@ export function ChatWindow(props: {
         content: content,
         chat_group: "LangStarter",
         status: "active",
-        user_id: userCatalog?.user_catalog_id,
+        user_id: session?.user?.user_catalog_id,
         createdAt: new Date().toISOString(),
         isLike: false,
         bookmark: false,
@@ -900,7 +901,7 @@ export function ChatWindow(props: {
           content: finalAssistantMessage.content,
           chat_group: "LangStarter",
           status: "active",
-          user_id: userCatalog?.user_catalog_id,
+          user_id: session?.user?.user_catalog_id,
           createdAt: new Date().toISOString(),
           isLike: false,
           bookmark: false,
@@ -974,7 +975,7 @@ export function ChatWindow(props: {
             content: msg.content,
             chat_group: "LangStarter",
             status: "active",
-            user_id: userCatalog?.user_catalog_id,
+            user_id: session?.user?.user_catalog_id,
             createdAt: new Date().toISOString(),
             isLike: msg.isLike || false,
             bookmark: msg.bookmark || false,
@@ -1135,6 +1136,7 @@ export function ChatWindow(props: {
             onUpdateMessage={handleUpdateMessage}
             onBookmarkUpdate={refreshImportant}
             onFavoriteUpdate={refreshFavorites}
+            loading={chat.isLoading || intermediateStepsLoading}
           />
           {/* Invisible div for auto-scroll */}
           <div ref={messagesEndRef} />

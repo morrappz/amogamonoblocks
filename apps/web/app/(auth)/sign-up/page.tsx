@@ -21,7 +21,6 @@ import { Github, Facebook } from "lucide-react";
 import { register, RegisterActionState } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useAuth } from "@/context/supabase-provider";
 
 const formSchema = z
   .object({
@@ -66,16 +65,15 @@ const formSchema = z
   });
 
 export default function SignUp() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const router = useRouter();
-  const { signUp } = useAuth();
 
-  // const [state, formAction, pending] = useActionState<
-  //   RegisterActionState,
-  //   z.infer<typeof formSchema>
-  // >(onSubmit, {
-  //   status: "idle",
-  // });
+  const [state, formAction, pending] = useActionState<
+    RegisterActionState,
+    z.infer<typeof formSchema>
+  >(register, {
+    status: "idle",
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -92,39 +90,21 @@ export default function SignUp() {
     },
   });
 
-  const handleSignUp = async (data: z.infer<typeof formSchema>) => {
-    try {
-      setIsLoading(true);
-      const result = await signUp(data.user_email, data.password, {
-        first_name: data.first_name,
-        last_name: data.last_name,
-        user_name: data.user_name,
-        user_mobile: data.user_mobile,
-        for_business_name: data.for_business_name,
-        for_business_number: data.for_business_number,
-      });
+  useEffect(() => {
+    if (pending || !state?.status) return;
 
-      if (
-        result &&
-        typeof result === "object" &&
-        "user" in result &&
-        result.user
-      ) {
-        console.log("User registered successfully with business data");
-        toast.success(
-          "Account created successfully! Please check your email to verify your account."
-        );
-      } else {
-        toast.error("Failed to create account");
-      }
-      // form.reset();
-    } catch (error) {
-      console.error("Error creating user:", error);
-      toast.error("Failed to create account");
-    } finally {
-      setIsLoading(false);
+    if (state?.status === "user_exists") {
+      toast.error("Account already exists");
+    } else if (state?.status === "failed") {
+      if (state?.message) toast.error(state?.message);
+      else toast.error("Failed to create account");
+    } else if (state?.status === "invalid_data") {
+      toast.error("Failed validating your submission!");
+    } else if (state?.status === "success") {
+      toast.success("Account created successfully");
+      router.refresh();
     }
-  };
+  }, [state, pending, router]);
 
   return (
     <Card className="p-6">
@@ -145,7 +125,11 @@ export default function SignUp() {
       </div>
       <div className="grid gap-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSignUp)}>
+          <form
+            onSubmit={form.handleSubmit((v) =>
+              startTransition(() => formAction(v))
+            )}
+          >
             <div className="grid gap-2">
               <FormField
                 control={form.control}

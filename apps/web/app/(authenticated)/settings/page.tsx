@@ -1,10 +1,10 @@
 "use client";
 
-import { useAuth } from "@/context/supabase-provider";
+import { useSession } from "next-auth/react";
 import React from "react";
 
 export default function Settings() {
-  const { session } = useAuth();
+  const { data: session } = useSession();
 
   return (
     <>

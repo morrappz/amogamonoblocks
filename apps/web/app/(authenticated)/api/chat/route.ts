@@ -8,10 +8,6 @@ import { ChatMistralAI } from "@langchain/mistralai";
 import { ChatDeepSeek } from "@langchain/deepseek";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { PromptTemplate } from "@langchain/core/prompts";
-import {
-  HttpResponseOutputParser,
-  StructuredOutputParser,
-} from "langchain/output_parsers";
 
 export const runtime = "edge";
 
@@ -19,12 +15,6 @@ const formatMessage = (message: VercelChatMessage) => {
   return `${message.role}: ${message.content}`;
 };
 
-/**
- * This handler initializes and calls a simple chain with a prompt,
- * chat model, and output parser. See the docs for more information:
- *
- * https://js.langchain.com/docs/guides/expression_language/cookbook#prompttemplate--llm--outputparser
- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -43,7 +33,7 @@ export async function POST(req: NextRequest) {
     const provider = aiModel?.provider;
     let providerModel;
 
-    if (["google", "openai"].includes(provider)) {
+    if (["google", "openai", "mistral"].includes(provider)) {
       providerModel = aiModel?.model;
     }
 
@@ -51,7 +41,7 @@ export async function POST(req: NextRequest) {
         You are a helpful assistant that can provide responses in multiple formats:
 
         1. **For regular text/conversation**: Return plain text or markdown
-        2. **For tabular data**: Return markdown tables
+        2. **For tabular data**: Return JSON with table data
         3. **For visual data that would be better as charts**: Return JSON with chart data
 
         ## Response Format Guidelines:
@@ -60,7 +50,7 @@ export async function POST(req: NextRequest) {
         Respond with plain text or markdown.
 
         ### For Tables (Custom Rendering):
-        When the user asks for a table or when data is best represented as a table (but not chart-worthy), return JSON in the following format:
+        When the user asks for a table or when data is best represented as a table (but not chart-worthy), return ONLY valid JSON (no markdown code blocks) in the following format:
 
         {{
           "content": "Here is the table you requested.",
@@ -75,22 +65,37 @@ export async function POST(req: NextRequest) {
 
 
         ### For Charts Only:
-        When the user specifically asks for charts or when data is better visualized as a chart, return JSON:
+        When the user specifically asks for charts or when data is better visualized as a chart, return ONLY valid JSON (no markdown code blocks):
 
+        **For Pie Chart or Doughnut Chart:**
         {{
-          "content": "Here is a chart showing the data you requested.",
+          "content": "Here is a pie chart showing the data you requested.",
           "chart": {{
             "type": "pie-chart",
             "title": "Chart Title",
             "labels": ["Label1", "Label2", "Label3"],
-            "data": [30, 25, 45],
+            "data": [30, 25, 45]
+          }}
+        }}
+
+        **For Bar Chart, Line Chart, Radar Chart, or Polar Area Chart:**
+        {{
+          "content": "Here is a bar/line chart showing the data you requested.",
+          "chart": {{
+            "type": "bar-chart",
+            "title": "Chart Title",
+            "xAxis": "Category",
+            "yAxis": "Value",
+            "data": [
+              {{ "label": "Label1", "value": 30 }},
+              {{ "label": "Label2", "value": 25 }},
+              {{ "label": "Label3", "value": 45 }}
+            ]
           }}
         }}
 
         ### For Analytic Card Only:
-        When the user specifically asks for data in analytic card, return JSON:
-
-        When the user asks for analytics, respond using the following format:
+        When the user specifically asks for data in analytic card, return ONLY valid JSON (no markdown code blocks):
 
         {{
           "content": "Here is your analytics card:",
@@ -116,11 +121,7 @@ export async function POST(req: NextRequest) {
           }}
 
         ### For Analytic Card With File Download API Only:
-        When the user specifically asks for data in analytic card with file download api, return JSON:
-
-        When the user asks for analytic card with file download api, respond using the following format:
-
-        And also generate a valid story based on data and generate chart type and provide x and y axis, to render chart
+        When the user specifically asks for data in analytic card with file download api, return ONLY valid JSON (no markdown code blocks):
 
         {{
         "analyticCardWithFileApi": {{
@@ -159,32 +160,21 @@ export async function POST(req: NextRequest) {
           }}
           }}
 
+        **Chart types available**: 
+        - "pie-chart", "doughnut-chart": Use format with "labels" array and "data" array
+        - "bar-chart", "line-chart", "radar-chart", "polar-area-chart": Use format with "data" array containing objects with "label" and "value" properties
 
-
-        **Chart types available**: "bar-chart", "line-chart", "pie-chart", "doughnut-chart", "radar-chart", "polar-area-chart"
+        ## Important Notes:
+        - For JSON responses (tables, charts, analytic cards), return ONLY the JSON object without any markdown code blocks or additional formatting
+        - Do NOT wrap JSON responses in code blocks
+        - The JSON must be valid and parseable
+        - For pie/doughnut charts: use separate "labels" and "data" arrays
+        - For bar/line/radar/polar charts: use "data" array with label-value objects
 
         ## Decision Making:
-        - Use **plain text/markdown** for: explanations, conversations, lists, tables
+        - Use **plain text/markdown** for: explanations, conversations, lists
+        - Use **JSON tables** for: tabular data that the user specifically requests
         - Use **JSON charts** only when: user explicitly asks for charts, or when data visualization would be significantly more helpful than a table
-
-        ## Strict Rule for Consistent Data:
-        Always ensure the chart output exactly matches the following JSON structure:
-
-        "chart": {{
-          "title": "Some title",
-          "description": "Optional summary",
-          "chartData": {{
-            "type": "bar-chart",
-            "xAxis": "Col1",
-            "yAxis": "Col2",
-            "data": [
-              {{ "label": "A", "value": 100 }},
-              {{ "label": "B", "value": 200 }}
-            ]
-          }}
-          }}
-
-        ## always give the chart data in x and y axis as above structure, dont give label and data
 
         Conversation so far:
         {chat_history}
@@ -194,12 +184,6 @@ export async function POST(req: NextRequest) {
 `;
 
     const prompt = PromptTemplate.fromTemplate(TEMPLATE);
-
-    /**
-     *
-     * See a full list of supported models at:
-     * https://js.langchain.com/docs/modules/model_io/models/
-     */
 
     const modelsMap = {
       openai: new ChatOpenAI({
@@ -217,8 +201,9 @@ export async function POST(req: NextRequest) {
         temperature: 0,
       }),
       mistral: new ChatMistralAI({
-        model: "mistral-large-latest",
+        model: providerModel,
         temperature: 0,
+        apiKey: aiModel?.key,
       }),
       claude: new ChatAnthropic({
         model: "claude-3-5-sonnet-20240620",
@@ -231,19 +216,16 @@ export async function POST(req: NextRequest) {
     };
 
     const model = modelsMap[provider];
-    /**
-     * Chat models stream message chunks rather than bytes, so this
-     * output parser handles serialization and byte-encoding.
-     */
-    const outputParser = new HttpResponseOutputParser();
 
-    /**
-     * Can also initialize as:
-     *
-     * import { RunnableSequence } from "@langchain/core/runnables";
-     * const chain = RunnableSequence.from([prompt, model, outputParser]);
-     */
-    const chain = prompt.pipe(model).pipe(outputParser);
+    if (!model) {
+      return NextResponse.json(
+        { error: `Unsupported provider: ${provider}` },
+        { status: 400 }
+      );
+    }
+
+    // Use streaming with proper handling for JSON responses
+    const chain = prompt.pipe(model);
 
     const stream = await chain.stream({
       chat_history: formattedPreviousMessages.join("\n"),
@@ -251,7 +233,30 @@ export async function POST(req: NextRequest) {
       language: selectedLanguage,
     });
 
-    return new StreamingTextResponse(stream);
+    // Create a custom streaming response that handles both text and JSON
+    const encoder = new TextEncoder();
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        let fullContent = "";
+
+        try {
+          for await (const chunk of stream) {
+            const content = chunk.content || "";
+            fullContent += content;
+
+            // Stream the content as it comes
+            controller.enqueue(encoder.encode(content));
+          }
+
+          controller.close();
+        } catch (error) {
+          console.error("Stream error:", error);
+          controller.error(error);
+        }
+      },
+    });
+
+    return new StreamingTextResponse(readableStream);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: e.status ?? 500 });
   }
