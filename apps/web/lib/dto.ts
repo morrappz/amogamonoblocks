@@ -2,6 +2,7 @@ import { Tables } from "@/types/database";
 import "server-only";
 
 export function getUserSessionDTO(data: Tables<"user_catalog">) {
+  console.log("data-----", data);
   return {
     user_catalog_id: data?.user_catalog_id,
     status: data?.status,
@@ -24,5 +25,11 @@ export function getUserSessionDTO(data: Tables<"user_catalog">) {
     emailverify: data?.emailverify,
     mobileverify: data?.mobileverify,
     whatsappverify: data?.whatsappverify,
+    business_address_1: data?.business_address_1,
+    business_address_2: data?.business_address_2,
+    business_city: data?.business_city,
+    business_state: data?.business_state,
+    business_postcode: data?.business_postcode,
+    business_country: data?.business_country,
   };
 }

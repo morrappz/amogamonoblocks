@@ -21,12 +21,15 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { updateProfileSettings } from "../lib/actions";
+import { updateProfileSettings, getUserProfileData } from "../lib/actions";
 import { useSession } from "next-auth/react";
 
 const Profile = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [profileData, setProfileData] = React.useState<any>(null);
+  const [isDataLoading, setIsDataLoading] = React.useState(true);
+  const isSessionLoading = status === "loading";
 
   const profileSchema = z.object({
     first_name: z.string().min(1, "First name is required"),
@@ -45,32 +48,75 @@ const Profile = () => {
     country: z.string().optional(),
   });
 
-  console.log("session-----", session);
-
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema as any),
     defaultValues: {
-      first_name: session?.user?.first_name || "",
-      last_name: session?.user?.last_name || "",
-      user_email: session?.user?.user_email || "",
-      account_status:
-        (session?.user?.status as "active" | "inactive") || "active",
-      business_name: session?.user?.business_name || "",
-      address_1: session?.user?.business_address_1 || "",
-      address_2: session?.user?.business_address_2 || "",
-      city: session?.user?.business_city || "",
-      state: session?.user?.business_state || "",
-      postcode: session?.user?.business_postcode || "",
-      country: session?.user?.business_country || "",
+      first_name: "",
+      last_name: "",
+      user_email: "",
+      account_status: "active",
+      business_name: "",
+      address_1: "",
+      address_2: "",
+      city: "",
+      state: "",
+      postcode: "",
+      country: "",
     },
   });
 
+  // Fetch user data from user_catalog table
+  React.useEffect(() => {
+    const fetchUserData = async () => {
+      if (session?.user?.user_catalog_id) {
+        setIsDataLoading(true);
+        try {
+          const result = await getUserProfileData(session.user.user_catalog_id);
+          if (result.success && result.data) {
+            setProfileData(result.data);
+            form.reset({
+              first_name: result.data.first_name || "",
+              last_name: result.data.last_name || "",
+              user_email: result.data.user_email || "",
+              account_status: result.data.account_status || "active",
+              business_name: result.data.business_name || "",
+              address_1: result.data.address_1 || "",
+              address_2: result.data.address_2 || "",
+              city: result.data.city || "",
+              state: result.data.state || "",
+              postcode: result.data.postcode || "",
+              country: result.data.country || "",
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          toast.error("Failed to load profile data");
+        } finally {
+          setIsDataLoading(false);
+        }
+      }
+    };
+
+    if (!isSessionLoading) {
+      fetchUserData();
+    }
+  }, [session, isSessionLoading, form]);
+
   const onSubmit = async (data: z.infer<typeof profileSchema>) => {
-    if (!session) return;
+    if (!session?.user) {
+      toast.error("Session not available. Please try again.");
+      return;
+    }
     setIsLoading(true);
     try {
-      await updateProfileSettings(data, session?.user?.user_catalog_id);
+      await updateProfileSettings(data, session?.user.user_catalog_id);
       toast.success("Profile updated successfully");
+
+      // Refresh the profile data after successful update
+      const result = await getUserProfileData(session.user.user_catalog_id);
+      if (result.success && result.data) {
+        setProfileData(result.data);
+      }
     } catch (error: any) {
       console.error("Error submitting form:", error);
       const errorMessage =
@@ -84,22 +130,32 @@ const Profile = () => {
   return (
     <div className="max-w-[800px] py-5 mx-auto pb-10 ">
       <div className="flex items-center justify-center flex-col">
-        <div className="bg-accent w-10 h-10 text-center p-2.5 rounded-full">
-          <p>{session?.user?.first_name?.[0].toUpperCase()}</p>
-        </div>
-        <p className="font-semibold text-2xl">
-          {session?.user?.first_name} {session?.user?.last_name}
-        </p>
-        <p>{session?.user?.user_mobile}</p>
-        {session?.user?.roles_json?.length ? (
-          <div className="flex items-center space-x-2 pt-2">
-            Roles:
-            {session.user.roles_json.map((role: string) => (
-              <span key={role} className=" px-2 py-1 text-sm">
-                {role}
-              </span>
-            ))}
+        {isSessionLoading || isDataLoading ? (
+          <div className="space-y-2 text-center">
+            <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse mx-auto"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-32 mx-auto"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-24 mx-auto"></div>
           </div>
+        ) : profileData ? (
+          <>
+            <div className="bg-accent w-10 h-10 text-center p-2.5 rounded-full">
+              <p>{profileData.first_name?.[0]?.toUpperCase()}</p>
+            </div>
+            <p className="font-semibold text-2xl">
+              {profileData.first_name} {profileData.last_name}
+            </p>
+            <p>{profileData.user_mobile}</p>
+            {profileData.roles_json?.length ? (
+              <div className="flex items-center space-x-2 pt-2">
+                Roles:
+                {profileData.roles_json.map((role: string) => (
+                  <span key={role} className=" px-2 py-1 text-sm">
+                    {role}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </>
         ) : null}
       </div>
       <div className="space-y-5 pt-5">
@@ -255,9 +311,15 @@ const Profile = () => {
             className="w-full"
             onClick={form.handleSubmit(onSubmit)}
             type="submit"
-            disabled={isLoading}
+            disabled={
+              isLoading || isSessionLoading || isDataLoading || !session?.user
+            }
           >
-            {isLoading ? "Saving Changes..." : "Save Changes"}
+            {isLoading
+              ? "Saving Changes..."
+              : isSessionLoading || isDataLoading
+                ? "Loading..."
+                : "Save Changes"}
           </Button>
         </div>
       </div>
