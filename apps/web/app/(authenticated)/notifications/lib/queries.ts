@@ -18,3 +18,16 @@ export async function getNotifications() {
     throw error;
   }
 }
+
+export async function archieveNotification(id: string) {
+  try {
+    const { error } = await postgrest
+      .from("message")
+      .update({ archive_status: true })
+      .eq("id", id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error archiving notification:", error);
+  }
+}
