@@ -1,17 +1,37 @@
 "use client";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import React, { useMemo } from "react";
+import { Archive, Search, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo } from "react";
 import { NotificationType } from "../types";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, set } from "date-fns";
+import { archieveNotification, getNotifications } from "../lib/queries";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const Notifications = ({
-  notifications,
-}: {
-  notifications: NotificationType[];
-}) => {
+const Notifications = () => {
   const [search, setSearch] = React.useState("");
+  const [notifications, setNotifications] = React.useState<NotificationType[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const fetchNotifications = async () => {
+    setIsLoading(true);
+    try {
+      const notificationsData = await getNotifications();
+      setNotifications(notificationsData || []);
+    } catch (error) {
+      toast.error("Failed to fetch notifications");
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter(
@@ -24,6 +44,21 @@ const Notifications = ({
           .includes(search.toLowerCase())
     );
   }, [notifications, search]);
+
+  const handleArchive = async (id: string) => {
+    try {
+      await archieveNotification(id);
+      fetchNotifications();
+      toast.success("Notification archived successfully");
+    } catch (error) {
+      console.error("Error archiving notification:", error);
+      toast.error("Failed to archive notification");
+    }
+  };
+
+  const handleDelete = (notification: NotificationType) => {
+    console.log("id----", notification);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -43,7 +78,15 @@ const Notifications = ({
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-5 pb-5">
         <div className="space-y-3">
-          {filteredNotifications.length > 0 ? (
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="w-full h-14" />
+              <Skeleton className="w-full h-14" />
+              <Skeleton className="w-full h-14" />
+              <Skeleton className="w-full h-14" />
+              <Skeleton className="w-full h-14" />
+            </div>
+          ) : filteredNotifications.length > 0 ? (
             filteredNotifications.map((notification) => (
               <Card key={notification.id}>
                 <CardContent className="p-2.5">
@@ -57,7 +100,20 @@ const Notifications = ({
                       })}
                     </p>
                   </div>
-                  <p className="text-gray-400">{notification.chat_message}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-gray-400">{notification.chat_message}</p>
+                    <div className="flex gap-3 items-center">
+                      <Archive
+                        className={`w-5 h-5 cursor-pointer ${notification.archive_status ? "text-green-500 " : "text-muted-foreground"}`}
+                        onClick={() => handleArchive(notification.id)}
+                      />
+
+                      <Trash2
+                        onClick={() => handleDelete(notification)}
+                        className="w-5 h-5 text-muted-foreground hover:text-red-500 cursor-pointer"
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))

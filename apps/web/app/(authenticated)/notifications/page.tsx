@@ -11,7 +11,7 @@ const Page = async () => {
   const notifications = await getNotifications();
   return (
     <div className="max-w-[800px] mx-auto">
-      <Notifications notifications={notifications} />
+      <Notifications />
     </div>
   );
 };
