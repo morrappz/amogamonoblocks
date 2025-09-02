@@ -1,0 +1,310 @@
+"use client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import z from "zod";
+import { editPromptData, getPromptData, savePrompt } from "../lib/actions";
+import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { ScheduleForm } from "./ScheduleForm";
+
+const NewPrompt = ({ id }: { id?: number }) => {
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const newPrompt = z.object({
+    title: z.string().min(1, "Title must be 3 characters"),
+    description: z.string().optional(),
+    status: z.string().min(1, "Status is required"),
+    remarks: z.string().optional(),
+    is_scheduled: z.boolean(),
+    // Schedule configuration fields
+    frequency: z.string().optional(),
+    schedule_time: z.string().optional(),
+    timezone: z.string().optional(),
+    start_date: z.string().optional(),
+    end_date: z.string().optional(),
+    selected_weekdays: z.array(z.string()).optional(),
+    day_of_month: z.number().optional(),
+    start_month: z.number().optional(),
+    end_month: z.number().optional(),
+    selected_year: z.number().optional(),
+    selected_month: z.number().optional(),
+    selected_day: z.number().optional(),
+    specific_dates: z.array(z.string()).optional(),
+    delivery_options: z.record(z.boolean()).optional(),
+    target_all_users: z.boolean().optional(),
+    target_user_ids: z
+      .array(
+        z.object({
+          user_catalog_id: z.number(),
+          first_name: z.string(),
+          last_name: z.string().nullable(),
+          user_email: z.string().nullable(),
+        })
+      )
+      .optional(),
+  });
+
+  const form = useForm<z.infer<typeof newPrompt>>({
+    resolver: zodResolver(newPrompt),
+    defaultValues: {
+      title: "",
+      description: "",
+      status: "active",
+      remarks: "",
+      is_scheduled: false,
+      frequency: "daily",
+      schedule_time: "09:00",
+      timezone: "UTC",
+      start_date: "",
+      end_date: "",
+      selected_weekdays: [],
+      day_of_month: 1,
+      start_month: 1,
+      end_month: 12,
+      selected_year: new Date().getFullYear(),
+      selected_month: 1,
+      selected_day: 1,
+      specific_dates: [],
+      delivery_options: {},
+      target_all_users: true,
+      target_user_ids: [],
+    },
+  });
+
+  useEffect(() => {
+    if (id) {
+      const fetchPrompt = async () => {
+        const response = await getPromptData(id);
+        if (response) {
+          const promptData = response?.data?.[0];
+          form.setValue("title", promptData?.title || "");
+          form.setValue("description", promptData?.description || "");
+          form.setValue("status", promptData?.status || "active");
+          form.setValue("remarks", promptData?.remarks || "");
+          form.setValue("is_scheduled", promptData?.is_scheduled || false);
+
+          // Set schedule configuration values if they exist
+          if (promptData?.is_scheduled) {
+            form.setValue("frequency", promptData?.frequency || "daily");
+            form.setValue(
+              "schedule_time",
+              promptData?.schedule_time || "09:00"
+            );
+            form.setValue("timezone", promptData?.timezone || "UTC");
+            form.setValue("start_date", promptData?.start_date || "");
+            form.setValue("end_date", promptData?.end_date || "");
+            form.setValue(
+              "selected_weekdays",
+              Array.isArray(promptData?.selected_weekdays)
+                ? promptData.selected_weekdays
+                : []
+            );
+            form.setValue("day_of_month", promptData?.day_of_month || 1);
+            form.setValue("start_month", promptData?.start_month || 1);
+            form.setValue("end_month", promptData?.end_month || 12);
+            form.setValue(
+              "selected_year",
+              promptData?.selected_year || new Date().getFullYear()
+            );
+            form.setValue("selected_month", promptData?.selected_month || 1);
+            form.setValue("selected_day", promptData?.selected_day || 1);
+            form.setValue(
+              "specific_dates",
+              Array.isArray(promptData?.specific_dates)
+                ? promptData.specific_dates
+                : []
+            );
+            form.setValue(
+              "delivery_options",
+              promptData?.delivery_options || {}
+            );
+            form.setValue(
+              "target_all_users",
+              promptData?.target_all_users ?? true
+            );
+            form.setValue(
+              "target_user_ids",
+              Array.isArray(promptData?.target_user_ids)
+                ? promptData.target_user_ids
+                : []
+            );
+          }
+        }
+      };
+      fetchPrompt();
+    }
+  }, [id, form]);
+
+  const onSubmit = async (data: z.infer<typeof newPrompt>) => {
+    setIsLoading(true);
+    try {
+      let response;
+      if (id) {
+        response = await editPromptData(id, data);
+      } else {
+        response = await savePrompt(data);
+      }
+      if (response.success) {
+        toast.success("Prompt created successfully");
+        if (!id) {
+          form.reset();
+        }
+      } else {
+        toast.error("There was an error creating the prompt");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("There was an error creating the prompt");
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <Card>
+        <CardContent className="p-3.5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              {id ? (
+                <h1 className="text-2xl font-semibold">Edit Report Schedule</h1>
+              ) : (
+                <h1 className="text-2xl font-semibold">New Report Schedule</h1>
+              )}
+            </div>
+            <Link href="/report-schedule">
+              <Button variant={"outline"}>
+                <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+                Go Back
+              </Button>
+            </Link>
+          </div>
+          <Form {...form}>
+            <FormField
+              name="title"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <Input {...field} />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="description"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description / Prompt Text</FormLabel>
+                  <Textarea {...field} className="min-w-[500px]" />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="status"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    {...field}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="remarks"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Remarks</FormLabel>
+                  <Textarea {...field} className="min-w-[500px]" />
+                </FormItem>
+              )}
+            />
+            {/* <FormField
+              name="is_scheduled"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem className=" flex items-center gap-2.5">
+                  <Checkbox
+                    id="is_scheduled"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                  <FormLabel htmlFor="is_scheduled">
+                    Schedule Execution
+                  </FormLabel>
+                </FormItem>
+              )}
+            /> */}
+
+            {/* Schedule Form Component */}
+            <ScheduleForm
+              control={form.control}
+              errors={form.formState.errors}
+              setValue={form.setValue}
+              getValues={form.getValues}
+            />
+          </Form>
+        </CardContent>
+        <CardFooter>
+          <div className="flex justify-end gap-2.5 w-full">
+            <Button variant={"outline"}>Cancel</Button>
+            {id ? (
+              <Button
+                disabled={isLoading}
+                onClick={form.handleSubmit(onSubmit)}
+              >
+                {isLoading ? "Saving..." : "Save Changes"}
+              </Button>
+            ) : (
+              <Button
+                disabled={isLoading}
+                onClick={form.handleSubmit(onSubmit)}
+              >
+                {isLoading ? "Creating..." : "Create Report"}
+              </Button>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+};
+
+export default NewPrompt;

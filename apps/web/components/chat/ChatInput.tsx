@@ -103,6 +103,7 @@ export function ChatInput(props: {
       <div className="border border-input bg-secondary rounded-lg flex flex-col gap-2 max-w-[768px] w-full mx-auto">
         <input
           value={props.value}
+          data-testid="chat-input"
           placeholder={props.placeholder}
           onChange={props.onChange}
           className="border-none outline-none bg-transparent p-4"
