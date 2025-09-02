@@ -10,6 +10,23 @@ interface PromptData {
   is_scheduled: boolean;
   description?: string | undefined;
   remarks?: string | undefined;
+  // Schedule configuration fields
+  frequency?: string;
+  schedule_time?: string;
+  timezone?: string;
+  start_date?: string;
+  end_date?: string;
+  selected_weekdays?: string[] | Record<string, any>;
+  day_of_month?: number;
+  start_month?: number;
+  end_month?: number;
+  selected_year?: number;
+  selected_month?: number;
+  selected_day?: number;
+  specific_dates?: string[] | Record<string, any>;
+  delivery_options?: Record<string, any>;
+  target_all_users?: boolean;
+  target_user_ids?: any[] | Record<string, any>;
 }
 
 export async function savePrompt(

@@ -24,7 +24,7 @@ export interface PromptsList {
   selected_year: number | null;
   selected_month: number | null;
   selected_day: number | null;
-  title: string | null;
+  title: string;
   description: string | null;
   status: string | null;
   remarks: string | null;
