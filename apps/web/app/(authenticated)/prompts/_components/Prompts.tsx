@@ -20,6 +20,7 @@ type PromptsList = {
 const Prompts = () => {
   const [prompts, setPrompts] = React.useState<PromptsList[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [search, setSearch] = React.useState("");
 
   const fetchPrompts = async () => {
     setIsLoading(true);
@@ -63,7 +64,12 @@ const Prompts = () => {
       <div className="flex items-center w-full gap-2.5">
         <div className="border w-full rounded-lg flex items-center gap-2.5">
           <Search className="text-muted-foreground ml-3" />
-          <Input placeholder="Search prompts..." className="border-0" />
+          <Input
+            placeholder="Search prompts..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border-0"
+          />
         </div>
         <Link href="/prompts/new">
           <Button size="icon">
@@ -80,32 +86,36 @@ const Prompts = () => {
             <Skeleton className="w-full h-[100px]" />
           </div>
         ) : (
-          prompts.map((prompt) => (
-            <Card key={prompt.id} className=" my-3">
-              <CardContent className="p-2.5">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-semibold">{prompt.title}</h2>
-                    <Badge>{prompt.status}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-muted-foreground">
-                      {prompt.description}
-                    </p>
-                    <div className="flex items-center gap-2.5">
-                      <Trash2
-                        onClick={() => handleDelete(prompt.id)}
-                        className="text-red-500 cursor-pointer h-5 w-5"
-                      />
-                      <Link href={`/prompts/edit/${prompt.id}`}>
-                        <Edit className="w-5 h-5 text-muted-foreground" />
-                      </Link>
+          prompts
+            .filter((prompt) =>
+              prompt.title.toLowerCase().includes(search.toLowerCase())
+            )
+            .map((prompt) => (
+              <Card key={prompt.id} className=" my-3">
+                <CardContent className="p-2.5">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-semibold">{prompt.title}</h2>
+                      <Badge>{prompt.status}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <p className="text-muted-foreground">
+                        {prompt.description}
+                      </p>
+                      <div className="flex items-center gap-2.5">
+                        <Trash2
+                          onClick={() => handleDelete(prompt.id)}
+                          className="text-red-500 cursor-pointer h-5 w-5"
+                        />
+                        <Link href={`/prompts/edit/${prompt.id}`}>
+                          <Edit className="w-5 h-5 text-muted-foreground" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            ))
         )}
       </div>
     </div>

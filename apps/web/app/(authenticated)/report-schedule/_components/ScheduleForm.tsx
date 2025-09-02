@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Clock, Search, User, X } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { Control, useWatch, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -16,14 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 
 const weekdays = [
   "monday",
@@ -59,7 +51,12 @@ const commonTimezones = [
   "Asia/Kolkata", // India
 ];
 
-const deliveryOptionsConfig = [{ id: "email", label: "Send as Email" }];
+const deliveryOptionsConfig = [
+  { id: "aiChat", label: "Send on AI Chat" },
+  { id: "notifier", label: "Send on Notifier" },
+  { id: "email", label: "Send as Email" },
+  { id: "chat", label: "Send on Chat" },
+];
 
 interface User {
   user_catalog_id: number;
@@ -145,6 +142,29 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
     },
     [selectedUsers]
   );
+
+  // Reset schedule fields when scheduling is disabled
+  useEffect(() => {
+    if (!isScheduled) {
+      // Reset schedule-specific fields to avoid validation issues
+      setValue("frequency", "daily");
+      setValue("schedule_time", "09:00");
+      setValue("timezone", "UTC");
+      setValue("start_date", "");
+      setValue("end_date", "");
+      setValue("selected_weekdays", []);
+      setValue("day_of_month", 1);
+      setValue("start_month", 1);
+      setValue("end_month", 12);
+      setValue("selected_year", new Date().getFullYear());
+      setValue("selected_month", 1);
+      setValue("selected_day", 1);
+      setValue("specific_dates", []);
+      setValue("delivery_options", {});
+      setValue("target_all_users", true);
+      setValue("target_user_ids", []);
+    }
+  }, [isScheduled, setValue]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -263,7 +283,13 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Start Date</FormLabel>
-                  <Popover>
+                  <br />
+                  <input
+                    className="border w-full p-2.5 rounded-lg"
+                    type="date"
+                    {...field}
+                  />
+                  {/* <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -278,7 +304,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                      {/* <Calendar
+                      <Calendar
                         mode="single"
                         selected={
                           field.value ? new Date(field.value) : undefined
@@ -287,10 +313,10 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
                           field.onChange(date?.toISOString().split("T")[0])
                         }
                         initialFocus
-                      /> */}
+                      />
                       <input type="date" {...field} />
                     </PopoverContent>
-                  </Popover>
+                  </Popover> */}
                   <FormMessage />
                 </FormItem>
               )}
@@ -301,7 +327,13 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>End Date</FormLabel>
-                  <Popover>
+                  <br />
+                  <input
+                    className="border w-full p-2.5 rounded-lg"
+                    type="date"
+                    {...field}
+                  />
+                  {/* <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -327,7 +359,7 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
                         initialFocus
                       />
                     </PopoverContent>
-                  </Popover>
+                  </Popover> */}
                   <FormMessage />
                 </FormItem>
               )}
@@ -515,29 +547,50 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Specific Dates</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      Add Date
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      onSelect={(date) => {
-                        if (date) {
-                          const dateString = date.toISOString().split("T")[0];
-                          field.onChange([...(field.value || []), dateString]);
-                        }
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <div className="flex gap-2">
+                  <input
+                    className="border w-full p-2.5 rounded-lg"
+                    type="date"
+                    id="specific-date-input"
+                    placeholder="Select a date"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const input = document.getElementById(
+                        "specific-date-input"
+                      ) as HTMLInputElement;
+                      if (input?.value) {
+                        const newDates = [...(field.value || []), input.value];
+                        field.onChange(newDates);
+                        input.value = "";
+                      }
+                    }}
+                  >
+                    Add Date
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {field.value?.map((date: string, index: number) => (
-                    <div key={index} className="bg-muted p-2 rounded text-sm">
+                    <div
+                      key={index}
+                      className="bg-muted p-2 rounded text-sm flex items-center gap-2"
+                    >
                       {format(new Date(date), "PPP")}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newDates = field.value?.filter(
+                            (_: string, i: number) => i !== index
+                          );
+                          field.onChange(newDates);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
                   ))}
                 </div>

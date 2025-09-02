@@ -28,42 +28,97 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ScheduleForm } from "./ScheduleForm";
 
-const NewPrompt = ({ id }: { id?: number }) => {
+const NewReport = ({ id }: { id?: number }) => {
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const newPrompt = z.object({
-    title: z.string().min(1, "Title must be 3 characters"),
-    description: z.string().optional(),
-    status: z.string().min(1, "Status is required"),
-    remarks: z.string().optional(),
-    is_scheduled: z.boolean(),
-    // Schedule configuration fields
-    frequency: z.string().optional(),
-    schedule_time: z.string().optional(),
-    timezone: z.string().optional(),
-    start_date: z.string().optional(),
-    end_date: z.string().optional(),
-    selected_weekdays: z.array(z.string()).optional(),
-    day_of_month: z.number().optional(),
-    start_month: z.number().optional(),
-    end_month: z.number().optional(),
-    selected_year: z.number().optional(),
-    selected_month: z.number().optional(),
-    selected_day: z.number().optional(),
-    specific_dates: z.array(z.string()).optional(),
-    delivery_options: z.record(z.boolean()).optional(),
-    target_all_users: z.boolean().optional(),
-    target_user_ids: z
-      .array(
-        z.object({
-          user_catalog_id: z.number(),
-          first_name: z.string(),
-          last_name: z.string().nullable(),
-          user_email: z.string().nullable(),
-        })
-      )
-      .optional(),
-  });
+  const newPrompt = z
+    .object({
+      title: z.string().min(1, "Title must be 3 characters"),
+      description: z.string().optional(),
+      status: z.string().min(1, "Status is required"),
+      remarks: z.string().optional(),
+      is_scheduled: z.boolean(),
+      // Schedule configuration fields
+      frequency: z.string().optional(),
+      schedule_time: z.string().optional(),
+      timezone: z.string().optional(),
+      start_date: z.string().optional(),
+      end_date: z.string().optional(),
+      selected_weekdays: z.array(z.string()).optional(),
+      day_of_month: z.number().optional(),
+      start_month: z.number().optional(),
+      end_month: z.number().optional(),
+      selected_year: z.number().optional(),
+      selected_month: z.number().optional(),
+      selected_day: z.number().optional(),
+      specific_dates: z.array(z.string()).optional(),
+      delivery_options: z.record(z.boolean()).optional(),
+      target_all_users: z.boolean().optional(),
+      target_user_ids: z
+        .array(
+          z.object({
+            user_catalog_id: z.number(),
+            first_name: z.string(),
+            last_name: z.string().nullable(),
+            user_email: z.string().nullable(),
+          })
+        )
+        .optional(),
+    })
+    .refine(
+      (data) => {
+        // If not scheduled, skip validation
+        if (!data.is_scheduled) return true;
+
+        // If scheduled, validate required fields based on frequency
+        if (!data.frequency) return false;
+        if (!data.timezone) return false;
+
+        // Validate time for non-hourly frequencies
+        if (data.frequency !== "hourly" && !data.schedule_time) return false;
+
+        // Validate date ranges for daily/hourly
+        if (data.frequency === "daily" || data.frequency === "hourly") {
+          if (!data.start_date) return false;
+        }
+
+        // Validate weekdays for weekly
+        if (
+          data.frequency === "weekly" &&
+          (!data.selected_weekdays || data.selected_weekdays.length === 0)
+        )
+          return false;
+
+        // Validate monthly fields
+        if (data.frequency === "monthly") {
+          if (
+            !data.day_of_month ||
+            data.day_of_month < 1 ||
+            data.day_of_month > 31
+          )
+            return false;
+        }
+
+        // Validate yearly fields
+        if (data.frequency === "yearly") {
+          if (!data.selected_year || !data.selected_month || !data.selected_day)
+            return false;
+        }
+
+        // Validate specific dates
+        if (
+          data.frequency === "specific_dates" &&
+          (!data.specific_dates || data.specific_dates.length === 0)
+        )
+          return false;
+
+        return true;
+      },
+      {
+        message: "Please fill in all required schedule fields",
+        path: ["is_scheduled"],
+      }
+    );
 
   const form = useForm<z.infer<typeof newPrompt>>({
     resolver: zodResolver(newPrompt),
@@ -114,12 +169,20 @@ const NewPrompt = ({ id }: { id?: number }) => {
             form.setValue("timezone", promptData?.timezone || "UTC");
             form.setValue("start_date", promptData?.start_date || "");
             form.setValue("end_date", promptData?.end_date || "");
+
+            // Handle JSONB arrays properly
+            const selectedWeekdays = promptData?.selected_weekdays;
             form.setValue(
               "selected_weekdays",
-              Array.isArray(promptData?.selected_weekdays)
-                ? promptData.selected_weekdays
-                : []
+              Array.isArray(selectedWeekdays)
+                ? selectedWeekdays
+                : selectedWeekdays &&
+                    typeof selectedWeekdays === "object" &&
+                    selectedWeekdays.length !== undefined
+                  ? Object.values(selectedWeekdays).filter((v) => v !== null)
+                  : []
             );
+
             form.setValue("day_of_month", promptData?.day_of_month || 1);
             form.setValue("start_month", promptData?.start_month || 1);
             form.setValue("end_month", promptData?.end_month || 12);
@@ -129,25 +192,47 @@ const NewPrompt = ({ id }: { id?: number }) => {
             );
             form.setValue("selected_month", promptData?.selected_month || 1);
             form.setValue("selected_day", promptData?.selected_day || 1);
+
+            // Handle specific dates JSONB
+            const specificDates = promptData?.specific_dates;
             form.setValue(
               "specific_dates",
-              Array.isArray(promptData?.specific_dates)
-                ? promptData.specific_dates
-                : []
+              Array.isArray(specificDates)
+                ? specificDates
+                : specificDates &&
+                    typeof specificDates === "object" &&
+                    specificDates.length !== undefined
+                  ? Object.values(specificDates).filter((v) => v !== null)
+                  : []
             );
+
+            // Handle delivery options JSONB
+            const deliveryOptions = promptData?.delivery_options;
             form.setValue(
               "delivery_options",
-              promptData?.delivery_options || {}
+              deliveryOptions &&
+                typeof deliveryOptions === "object" &&
+                !Array.isArray(deliveryOptions)
+                ? deliveryOptions
+                : {}
             );
+
             form.setValue(
               "target_all_users",
               promptData?.target_all_users ?? true
             );
+
+            // Handle target user IDs JSONB
+            const targetUserIds = promptData?.target_user_ids;
             form.setValue(
               "target_user_ids",
-              Array.isArray(promptData?.target_user_ids)
-                ? promptData.target_user_ids
-                : []
+              Array.isArray(targetUserIds)
+                ? targetUserIds
+                : targetUserIds &&
+                    typeof targetUserIds === "object" &&
+                    targetUserIds.length !== undefined
+                  ? Object.values(targetUserIds).filter((v) => v !== null)
+                  : []
             );
           }
         }
@@ -159,24 +244,58 @@ const NewPrompt = ({ id }: { id?: number }) => {
   const onSubmit = async (data: z.infer<typeof newPrompt>) => {
     setIsLoading(true);
     try {
+      console.log("Form data being submitted:", data);
+      console.log("Form state errors:", form.formState.errors);
+
+      // Validate the form data
+      const validationResult = newPrompt.safeParse(data);
+      if (!validationResult.success) {
+        console.error("Validation errors:", validationResult.error.errors);
+        validationResult.error.errors.forEach((error) => {
+          console.error(
+            `Field: ${error.path.join(".")}, Message: ${error.message}`
+          );
+        });
+        toast.error(
+          "Please check the form for errors. See console for details."
+        );
+        return;
+      }
+
+      // Prepare the data for submission, ensuring JSONB fields are properly formatted
+      const submitData = {
+        ...data,
+        // Ensure arrays are properly formatted for JSONB storage
+        selected_weekdays: data.selected_weekdays || [],
+        specific_dates: data.specific_dates || [],
+        delivery_options: data.delivery_options || {},
+        target_user_ids: data.target_user_ids || [],
+      };
+
+      console.log("Prepared submit data:", submitData);
+
       let response;
       if (id) {
-        response = await editPromptData(id, data);
+        response = await editPromptData(id, submitData);
       } else {
-        response = await savePrompt(data);
+        response = await savePrompt(submitData);
       }
+      console.log("response----", response);
       if (response.success) {
-        toast.success("Prompt created successfully");
+        toast.success(
+          id ? "Prompt updated successfully" : "Prompt created successfully"
+        );
         if (!id) {
           form.reset();
         }
       } else {
-        toast.error("There was an error creating the prompt");
+        toast.error("There was an error saving the prompt");
       }
     } catch (error) {
-      console.error(error);
-      toast.error("There was an error creating the prompt");
-      throw error;
+      console.error("Error submitting form:", error);
+      toast.error(
+        `There was an error saving the prompt: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -202,89 +321,92 @@ const NewPrompt = ({ id }: { id?: number }) => {
             </Link>
           </div>
           <Form {...form}>
-            <FormField
-              name="title"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <Input {...field} />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="description"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description / Prompt Text</FormLabel>
-                  <Textarea {...field} className="min-w-[500px]" />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="status"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    {...field}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="remarks"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Remarks</FormLabel>
-                  <Textarea {...field} className="min-w-[500px]" />
-                </FormItem>
-              )}
-            />
-            {/* <FormField
-              name="is_scheduled"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className=" flex items-center gap-2.5">
-                  <Checkbox
-                    id="is_scheduled"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                  <FormLabel htmlFor="is_scheduled">
-                    Schedule Execution
-                  </FormLabel>
-                </FormItem>
-              )}
-            /> */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+              <FormField
+                name="title"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <Input {...field} />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="description"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description / Prompt Text</FormLabel>
+                    <Textarea {...field} className="min-w-[500px]" />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="status"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      {...field}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="remarks"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Remarks</FormLabel>
+                    <Textarea {...field} className="min-w-[500px]" />
+                  </FormItem>
+                )}
+              />
+              {/* <FormField
+                name="is_scheduled"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className=" flex items-center gap-2.5">
+                    <Checkbox
+                      id="is_scheduled"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <FormLabel htmlFor="is_scheduled">
+                      Schedule Execution
+                    </FormLabel>
+                  </FormItem>
+                )}
+              /> */}
 
-            {/* Schedule Form Component */}
-            <ScheduleForm
-              control={form.control}
-              errors={form.formState.errors}
-              setValue={form.setValue}
-              getValues={form.getValues}
-            />
+              {/* Schedule Form Component */}
+              <ScheduleForm
+                control={form.control}
+                errors={form.formState.errors}
+                setValue={form.setValue}
+                getValues={form.getValues}
+              />
+            </form>
           </Form>
         </CardContent>
         <CardFooter>
           <div className="flex justify-end gap-2.5 w-full">
             <Button variant={"outline"}>Cancel</Button>
+
             {id ? (
               <Button
                 disabled={isLoading}
@@ -307,4 +429,4 @@ const NewPrompt = ({ id }: { id?: number }) => {
   );
 };
 
-export default NewPrompt;
+export default NewReport;

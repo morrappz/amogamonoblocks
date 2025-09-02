@@ -1,6 +1,6 @@
 import React from "react";
-import NewPrompt from "../_components/NewReport";
 import { Metadata } from "next";
+import NewReport from "../_components/NewReport";
 
 export const metadata: Metadata = {
   title: "New Prompt",
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 const Page = () => {
   return (
     <div className="max-w-[800px] w-full mx-auto py-5">
-      <NewPrompt />
+      <NewReport />
     </div>
   );
 };

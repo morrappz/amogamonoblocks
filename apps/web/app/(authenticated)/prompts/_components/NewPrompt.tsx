@@ -169,12 +169,20 @@ const NewPrompt = ({ id }: { id?: number }) => {
             form.setValue("timezone", promptData?.timezone || "UTC");
             form.setValue("start_date", promptData?.start_date || "");
             form.setValue("end_date", promptData?.end_date || "");
+
+            // Handle JSONB arrays properly
+            const selectedWeekdays = promptData?.selected_weekdays;
             form.setValue(
               "selected_weekdays",
-              Array.isArray(promptData?.selected_weekdays)
-                ? promptData.selected_weekdays
-                : []
+              Array.isArray(selectedWeekdays)
+                ? selectedWeekdays
+                : selectedWeekdays &&
+                    typeof selectedWeekdays === "object" &&
+                    selectedWeekdays.length !== undefined
+                  ? Object.values(selectedWeekdays).filter((v) => v !== null)
+                  : []
             );
+
             form.setValue("day_of_month", promptData?.day_of_month || 1);
             form.setValue("start_month", promptData?.start_month || 1);
             form.setValue("end_month", promptData?.end_month || 12);
@@ -184,25 +192,47 @@ const NewPrompt = ({ id }: { id?: number }) => {
             );
             form.setValue("selected_month", promptData?.selected_month || 1);
             form.setValue("selected_day", promptData?.selected_day || 1);
+
+            // Handle specific dates JSONB
+            const specificDates = promptData?.specific_dates;
             form.setValue(
               "specific_dates",
-              Array.isArray(promptData?.specific_dates)
-                ? promptData.specific_dates
-                : []
+              Array.isArray(specificDates)
+                ? specificDates
+                : specificDates &&
+                    typeof specificDates === "object" &&
+                    specificDates.length !== undefined
+                  ? Object.values(specificDates).filter((v) => v !== null)
+                  : []
             );
+
+            // Handle delivery options JSONB
+            const deliveryOptions = promptData?.delivery_options;
             form.setValue(
               "delivery_options",
-              promptData?.delivery_options || {}
+              deliveryOptions &&
+                typeof deliveryOptions === "object" &&
+                !Array.isArray(deliveryOptions)
+                ? deliveryOptions
+                : {}
             );
+
             form.setValue(
               "target_all_users",
               promptData?.target_all_users ?? true
             );
+
+            // Handle target user IDs JSONB
+            const targetUserIds = promptData?.target_user_ids;
             form.setValue(
               "target_user_ids",
-              Array.isArray(promptData?.target_user_ids)
-                ? promptData.target_user_ids
-                : []
+              Array.isArray(targetUserIds)
+                ? targetUserIds
+                : targetUserIds &&
+                    typeof targetUserIds === "object" &&
+                    targetUserIds.length !== undefined
+                  ? Object.values(targetUserIds).filter((v) => v !== null)
+                  : []
             );
           }
         }
@@ -215,20 +245,40 @@ const NewPrompt = ({ id }: { id?: number }) => {
     setIsLoading(true);
     try {
       console.log("Form data being submitted:", data);
+      console.log("Form state errors:", form.formState.errors);
 
       // Validate the form data
       const validationResult = newPrompt.safeParse(data);
       if (!validationResult.success) {
         console.error("Validation errors:", validationResult.error.errors);
-        toast.error("Please check the form for errors");
+        validationResult.error.errors.forEach((error) => {
+          console.error(
+            `Field: ${error.path.join(".")}, Message: ${error.message}`
+          );
+        });
+        toast.error(
+          "Please check the form for errors. See console for details."
+        );
         return;
       }
 
+      // Prepare the data for submission, ensuring JSONB fields are properly formatted
+      const submitData = {
+        ...data,
+        // Ensure arrays are properly formatted for JSONB storage
+        selected_weekdays: data.selected_weekdays || [],
+        specific_dates: data.specific_dates || [],
+        delivery_options: data.delivery_options || {},
+        target_user_ids: data.target_user_ids || [],
+      };
+
+      console.log("Prepared submit data:", submitData);
+
       let response;
       if (id) {
-        response = await editPromptData(id, data);
+        response = await editPromptData(id, submitData);
       } else {
-        response = await savePrompt(data);
+        response = await savePrompt(submitData);
       }
       console.log("response----", response);
       if (response.success) {
@@ -243,7 +293,9 @@ const NewPrompt = ({ id }: { id?: number }) => {
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error("There was an error saving the prompt");
+      toast.error(
+        `There was an error saving the prompt: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -354,6 +406,7 @@ const NewPrompt = ({ id }: { id?: number }) => {
         <CardFooter>
           <div className="flex justify-end gap-2.5 w-full">
             <Button variant={"outline"}>Cancel</Button>
+
             {id ? (
               <Button
                 disabled={isLoading}
