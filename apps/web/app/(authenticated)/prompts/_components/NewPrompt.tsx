@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ScheduleForm } from "./ScheduleForm";
+import { calculateNextExecution } from "@/utils/schedule-utils";
 
 const NewPrompt = ({ id }: { id?: number }) => {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -261,6 +262,7 @@ const NewPrompt = ({ id }: { id?: number }) => {
         );
         return;
       }
+      const nextExecutionTime = calculateNextExecution(data);
 
       // Prepare the data for submission, ensuring JSONB fields are properly formatted
       const submitData = {
@@ -270,6 +272,7 @@ const NewPrompt = ({ id }: { id?: number }) => {
         specific_dates: data.specific_dates || [],
         delivery_options: data.delivery_options || {},
         target_user_ids: data.target_user_ids || [],
+        next_execution: nextExecutionTime,
       };
 
       console.log("Prepared submit data:", submitData);
