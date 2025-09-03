@@ -109,6 +109,11 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
   const frequency = useWatch({ control, name: "frequency" });
   const targetAllUsers = useWatch({ control, name: "target_all_users" });
   const selectedUsersRaw = useWatch({ control, name: "target_user_ids" });
+  const scheduleTime = useWatch({ control, name: "schedule_time" });
+  const timezone = useWatch({ control, name: "timezone" });
+  const startDate = useWatch({ control, name: "start_date" });
+  const selectedWeekdays = useWatch({ control, name: "selected_weekdays" });
+  const dayOfMonth = useWatch({ control, name: "day_of_month" });
 
   const selectedUsers = useMemo(
     () => selectedUsersRaw || [],
@@ -120,13 +125,67 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({
   const [foundUsers, setFoundUsers] = useState<User[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
 
-  let summaryText = "Not scheduled to run again.";
-  if (nextExecution) {
-    const relativeTime = formatDistanceToNow(nextExecution, {
-      addSuffix: true,
-    });
-    summaryText = `Next run: ${relativeTime}`;
-  }
+  const summaryText = useMemo(() => {
+    if (!isScheduled) {
+      return "Not scheduled to run again.";
+    }
+
+    if (nextExecution) {
+      const relativeTime = formatDistanceToNow(nextExecution, {
+        addSuffix: true,
+      });
+      return `Next run: ${relativeTime}`;
+    }
+
+    // Generate summary based on current form values
+    let summary = "";
+
+    if (frequency === "hourly") {
+      summary = "Runs every hour";
+    } else if (frequency === "daily") {
+      const time = scheduleTime || "09:00";
+      summary = `Runs daily at ${time}`;
+    } else if (frequency === "weekly") {
+      const time = scheduleTime || "09:00";
+      const days =
+        selectedWeekdays && selectedWeekdays.length > 0
+          ? selectedWeekdays
+              .map((day: string) => day.charAt(0).toUpperCase() + day.slice(1))
+              .join(", ")
+          : "Sunday";
+      summary = `Runs weekly on ${days} at ${time}`;
+    } else if (frequency === "monthly") {
+      const time = scheduleTime || "09:00";
+      const day = dayOfMonth || 1;
+      summary = `Runs monthly on day ${day} at ${time}`;
+    } else if (frequency === "yearly") {
+      const time = scheduleTime || "09:00";
+      summary = `Runs yearly at ${time}`;
+    } else if (frequency === "specific_dates") {
+      summary = "Runs on specific dates";
+    } else {
+      summary = `Runs ${frequency}`;
+    }
+
+    if (timezone && timezone !== "UTC") {
+      summary += ` (${timezone})`;
+    }
+
+    if (startDate) {
+      summary += ` starting ${format(new Date(startDate), "MMM d, yyyy")}`;
+    }
+
+    return summary;
+  }, [
+    isScheduled,
+    frequency,
+    scheduleTime,
+    timezone,
+    startDate,
+    selectedWeekdays,
+    dayOfMonth,
+    nextExecution,
+  ]);
 
   const debouncedUserSearch = useCallback(
     async (query: string) => {
