@@ -288,9 +288,9 @@ const NewPrompt = ({ id }: { id?: number }) => {
         toast.success(
           id ? "Prompt updated successfully" : "Prompt created successfully"
         );
-        if (!id) {
-          form.reset();
-        }
+        // if (!id) {
+        //   // form.reset();
+        // }
       } else {
         toast.error("There was an error saving the prompt");
       }
