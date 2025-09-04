@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
       .from("prompts_list")
       .select("*")
       .eq("is_scheduled", true)
-      .eq("status", "active")
-      .eq("execution_status", "idle");
+      .eq("status", "active");
+    // .eq("execution_status", "idle");
     //   .lte("next_execution", new Date().toISOString());
 
     if (error) {
