@@ -436,3 +436,20 @@ export async function getChatByShareId(id: string) {
     throw error;
   }
 }
+
+export async function getPrompts() {
+  const session = await auth();
+  try {
+    const { data, error } = await postgrest
+      .from("prompts_list")
+      .select("id,title,description")
+      .eq("status", "active")
+      .eq("created_by", session?.user?.user_catalog_id)
+      .order("title", { ascending: true });
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error fetching prompts:", error);
+    throw error;
+  }
+}

@@ -53,6 +53,7 @@ import {
   getMessagesByPromptUuid,
   getChatImportant,
   getChatByShareId,
+  getPrompts,
 } from "@/app/(authenticated)/langchain-chat/lib/actions";
 
 import { v4 as uuidv4 } from "uuid";
@@ -83,6 +84,8 @@ import Important from "./MenuItems/Important";
 import ChatBookMarks from "./MenuItems/ChatBookMarks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSession } from "next-auth/react";
+import ScheduledPrompts from "./MenuItems/ScheduledPrompts";
+import { postgrest } from "@/lib/postgrest";
 
 type Message = {
   id: string;
@@ -96,16 +99,11 @@ type Message = {
   chart?: any;
 };
 
-type IntermediateStepType = {
-  id: string;
-  role: string;
-  content: string;
-  createdAt: Date;
-  isLike: boolean;
-  important: boolean;
-  favorite: boolean;
-  chart?: string;
-};
+interface Prompt {
+  id: number;
+  title: string;
+  description: string;
+}
 
 export function ScrollToBottom(props: { className?: string }) {
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
@@ -185,6 +183,8 @@ export function ChatWindow(props: {
   const [important, setImportant] = useState<any[]>([]);
   const [chatBookMarks, setChatBookMarks] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [promptsLoading, setPromptsLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [importantLoading, setImportantLoading] = useState(false);
   const [chatBookMarkLoading, setChatBookMarkLoading] = useState(false);
@@ -208,6 +208,20 @@ export function ChatWindow(props: {
       toast.error("Error fetching History");
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const fetchPrompts = async () => {
+    if (promptsLoading) return;
+    setPromptsLoading(true);
+    try {
+      const response = await getPrompts();
+      setPrompts(response);
+    } catch (error) {
+      console.error("Error fetching prompts:", error);
+      toast.error("Error fetching Prompts");
+    } finally {
+      setPromptsLoading(false);
     }
   };
 
@@ -257,6 +271,10 @@ export function ChatWindow(props: {
     } finally {
       setFavoriteLoading(false);
     }
+  };
+
+  const refreshPrompts = async () => {
+    await fetchPrompts();
   };
 
   // Function to refresh history after operations like delete
@@ -937,6 +955,14 @@ export function ChatWindow(props: {
     setIsInitialLoad(false);
   };
 
+  const handleSendPrompt = async (content: string) => {
+    if (!content) return;
+
+    chat.setInput(content);
+    // Mark that we're no longer in initial load when user interacts
+    setIsInitialLoad(false);
+  };
+
   const handleBookmarkClick = async (promptUuid: string) => {
     if (bookmarkClickLoading) return; // Prevent multiple clicks
 
@@ -1023,6 +1049,13 @@ export function ChatWindow(props: {
           </div>
           <div className="flex items-center gap-1 sm:gap-2.5 flex-shrink-0">
             <div className="md:flex items-center hidden gap-1 sm:gap-2">
+              <ScheduledPrompts
+                prompts={prompts}
+                onPromptUpdate={refreshPrompts}
+                onDropdownOpen={fetchPrompts}
+                loading={promptsLoading}
+                onSendPrompt={handleSendPrompt}
+              />
               <Favorites
                 favorites={favorites}
                 onDropdownOpen={fetchFavorites}
@@ -1044,6 +1077,15 @@ export function ChatWindow(props: {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuGroup>
+                  <DropdownMenuItem className="md:hidden">
+                    <ScheduledPrompts
+                      prompts={prompts}
+                      onPromptUpdate={refreshPrompts}
+                      onDropdownOpen={fetchPrompts}
+                      loading={promptsLoading}
+                      onSendPrompt={handleSendPrompt}
+                    />
+                  </DropdownMenuItem>
                   <DropdownMenuItem className="md:hidden">
                     <Favorites
                       favorites={favorites}
