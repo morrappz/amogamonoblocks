@@ -9,6 +9,7 @@ import type { Dispatch, FormEvent, ReactNode, SetStateAction } from "react";
 import { toast } from "sonner";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { useParams, usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 import { ChatMessageBubble } from "@/components/chat/ChatMessageBubble";
 import { IntermediateStep } from "./IntermediateStep";
@@ -29,6 +30,7 @@ import {
   Plus,
   Settings,
   Settings2,
+  LogOut
 } from "lucide-react";
 import { Checkbox } from "../ui/checkbox";
 import { UploadDocumentsForm } from "./UploadDocumentsForm";
@@ -1154,6 +1156,16 @@ export function ChatWindow(props: {
                       <span>Settings</span>
                     </div>
                   </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <div
+                      className="flex items-center gap-2 cursor-pointer"
+                      onClick={() => signOut({ callbackUrl: "/chat-login" })}
+                    >
+                      <LogOut className="w-5 h-5 text-muted-foreground" />
+                      <span>Sign Out</span>
+                    </div>
+                  </DropdownMenuItem>
+
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>

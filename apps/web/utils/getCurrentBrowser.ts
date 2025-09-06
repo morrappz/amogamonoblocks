@@ -1,18 +1,16 @@
-export default function getCurrentBrowser(){
-    const userAgent = navigator.userAgent
-    if(userAgent.indexOf("Edg") > -1){
-        return "Microsoft Edge"
-    }
-    else if(userAgent.indexOf("Firefox") > -1){
-        return "Mozilla Firefox"
-    }
-    else if(userAgent.indexOf("Chrome") > -1){
-        return "Google Chrome"
-    }
-    else if(userAgent.indexOf("Safari") > -1){
-        return "Apple Safari"
-    }
-    else if(userAgent.indexOf("Opera") > -1){
-        return "Opera"
-    }
+export default function getCurrentBrowser(): string {
+  // If navigator is undefined (server-side), return a fallback
+  if (typeof navigator === "undefined") {
+    return "Unknown";
+  }
+
+  const userAgent = navigator.userAgent;
+
+  if (userAgent.includes("Edg")) return "Microsoft Edge";
+  if (userAgent.includes("Firefox")) return "Mozilla Firefox";
+  if (userAgent.includes("Chrome")) return "Google Chrome";
+  if (userAgent.includes("Safari")) return "Apple Safari";
+  if (userAgent.includes("Opera")) return "Opera";
+
+  return "Unknown"; // fallback if no match
 }
